@@ -4,15 +4,18 @@
 HMac 
 Two parties want to communicate, but they want to ensure the contents of their communication have not been tampered with.
 
-HMAC does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
+HMac does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
 
 HMac uses:
 
 1) Shared secret key: 
     A shared key needed to authenticate the sender as a trusted party. 
 2) Hash function:
-     A mathematical algoritm that has the role of applying a one-way cryptographic transformation to what is sent to the receiver. The receiver needs to apply the same method to the plain message and the key in their possession to then confront the result with the received string. If there is a match, the message has not been tampered with. 
-     It is preferable to use an hash function since it is a deterministic, fast, and constant-time algorithm like SHA-256 or SHA-512. The algorithm choice for HMac is fundamentally different from that of password storing. As a matter of fact, salt and pepper are not applied in this context.  
+     A mathematical algorithm that has the role of applying a one-way cryptographic transformation to what is sent to the receiver.
+     The receiver needs to apply the same method to the plain message and the key in their possession to then confront the result with the received string.
+     If there is a match, the message has not been tampered with. 
+     It is preferable to use an hash function since it is a deterministic, fast, and constant-time algorithm like SHA-256 or SHA-512.
+     The algorithm choice for HMac is fundamentally different from that of password storing. As a matter of fact, salt and pepper are not applied in this context.  
 
 A pair using this system has to agree on both the key and the hashing mechanism. 
 
@@ -34,11 +37,11 @@ Workflow:
 
 2) The receiver: 
     -Receives the tag, along with M;
-    -Recomputes expected_tag(K, M) using the secret key in their possess; 
+    -Recomputes expected_tag(K, M) using the secret key in their possession; 
     -Checks if tag = expected_tag
     -The comparison must be done in CONSTANT TIME^***
 
-If tag = expected_tg then M is authentic and unmodified; 
+If tag = expected_tag then M is authentic and unmodified; 
 If tag != expected_tag then M is not authentic and has been modified.
 
 HMac does not answer to the following quetions when follows the structure aferomentioned: 
@@ -50,7 +53,7 @@ HMac does not answer to the following quetions when follows the structure aferom
 
 The previous questions raise the following vulnerabilities: 
 
-    1) Replay attacks (very important). The attacker can send the exact same request jast sent; 
+    1) Replay attacks (very important). The attacker can send the exact same request just sent; 
     2) Valid BUT unintended message. HMac proves authorship, not intent;
     3) Context confusion. There must be method + path + scope included in the signature;
     4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
@@ -63,20 +66,29 @@ To fully validate a message you must bind HMac to:
     -Nonce --> Prevents duplication; 
     -Sender ID --> Prevents cross-app reuse.
 
-^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aim to compare two bits to then answer if they are different. 
-If they are indeed different then the result is 1, otherwise it is 0. Why does HMAC use XOR instead of hashing? XOR allows deterministic, length-preserving key mixing without introducing new secrets. It guarantees structural separation (ensures cryptographic separation between the key material and the message data), and it preserves the security proof of HMAC. XOR uses ipad and opad for comparison: 
+^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
+If they are indeed different then the result is 1, otherwise it is 0.
+Why does HMAC use XOR instead of hashing?
+XOR allows deterministic, length-preserving key mixing without introducing new secrets. It guarantees structural separation (ensures cryptographic separation
+between the key material and the message data), and it preserves the security proof of HMac. XOR uses ipad and opad for comparison: 
+
     e.g.
     K      = 1011
     ipad   = 0011
     ----------------
     K ⊕ ipad = 1000
-    What are opad and ipad? They are public costants with fixed patterns and thus the same for everyone. 
+
+    What are opad and ipad?
+    They are public costants with fixed patterns and thus the same for everyone. 
     
     Inner_key = K ⊕ ipad (apply XOR with ipad on key)
     Outer_key = K ⊕ opad (apply XOR with opad on key)
 
 ^** || stands for "concatenate the bytes in this exact order. 
-^*** An operation is constant time if it takes the same amount of time to run, no matter what the input is. If an operation runs faster or slower an attack can learn info just by measuring how long it takes to perform said operation and it's input. This is called timing side-channel attack.     
+^*** An operation is "constant time" if it takes the same amount of time to run, no matter what the input is.
+     If an operation runs faster or slower an attacker can learn info just by measuring how long it takes to perform said operation and its input.
+     This is called timing side-channel attack.     
+
     e.g. 
     NOT constant time(dangerous)
 
@@ -106,7 +118,7 @@ If they are indeed different then the result is 1, otherwise it is 0. Why does H
     Always takes the same time
     No information leaks.
     
-    Why does it matter for HMAC?
+    Why does it matter for HMac?
     If you compare them byte by byte and stop early, an attacker can:
     Send many requests
     Measure response time
@@ -117,7 +129,7 @@ If they are indeed different then the result is 1, otherwise it is 0. Why does H
     Where is constant time required?
 
         You need constant-time behavior when handling secrets, such as:
-        -HMAC tag comparison
+        -HMac tag comparison
         -Password hash comparison
         -Cryptographic keys
         -Authentication tokens
