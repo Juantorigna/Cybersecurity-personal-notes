@@ -1,6 +1,3 @@
-
-<?php
-/*
 HMac 
 Two parties want to communicate, but they want to ensure the contents of their communication have not been tampered with.
 
@@ -180,18 +177,17 @@ between the key material and the message data), and it preserves the security pr
         -Python: hmac.compare_digest()
         
         You should always use these, never == for secrets.
-*/
 
-//Examples 
+Examples 
 
-//1
+(1)
 
-//Step 1: generate a secure key
+    -Step 1: generate a secure key
 
-
+```php
 function generateSecretKey($length = 32) {
-    $secretKey = random_bytes($length)
-    return base64_encode($secretKey)
+    $secretKey = random_bytes($length);
+    return base64_encode($secretKey);
 }
 
 //generate and display key
@@ -199,7 +195,7 @@ $jeyString = generateSecretKey(32);
 echo "Secret key (store this securely!): " . $keyString . "\n";
 
 //To use the key later, decode it back to bytes 
-$secretKey = base64_decode($keyString)
+$secretKey = base64_decode($keyString);
 
 ###################################################################
 
@@ -214,7 +210,7 @@ define('SECRET_KEY', 'my-secret-123');
 function getSecretKey(){
     $key = getenv('HMAC_SECRET_KEY');
     if (!$key) {
-        throw new Exeption('HMAC_SECRET_KEY not found in env');
+        throw new Exception('HMAC_SECRET_KEY not found in env');
     }
     return base64_decode($key);
 }
@@ -225,20 +221,20 @@ $secret_config_file = require '/var/secret/hmac_config.php';
 $secretKey = base64_decode($secret_config_file['hmac_secret']);
 
 //Step 3: Generate HMac
-$message = "Trust me!"
+$message = "Trust me!";
 
 function create_HMAC($secretKey, $message, $algorithm = 'sha256') {
     return hash_hmac($algorithm, $message, $secretKey);
 }
 $sentTag = create_HMAC($secretKey, $message);
-echo $tag;
+echo $sentTag;
 
 //Step 4: Verify Hmac 
 $secret_config_file = require '/var/secret/hmac_config.php';
 $secretKey = base64_decode($secret_config_file['hmac_secret']);
 
 function verifyHMAC($secretKey, $message, $sentTag, $algorithm = 'sha256') {
-    $expectedTag = hash_hmac($algorithm, $message, $secretKey);
+    $expectedTag = hash_hmac($algorithm, $message, $secretKey); //binary
     //REMEMBER TO ALWAYS USE CONSTANT-TIME COMPARISON
     return hash_equals($sentTag, $expectedTag); //here's where it produces true or false
 }
@@ -251,6 +247,27 @@ if ($isValid) {
 }else{
     echo "You CANNOT trust this message!\n";
 }
+```
+
+/**Example 2: Api request signing (Client-->Server)
+   Situation: My app calls my API, and I want it to ensure the following are true: 
+    a) The request came from my app; 
+    b) The rquest hasn't been tampered with; 
+    c) The request isn't a replay.
+**/
+
+
+tep 1: frontend.js (untrusted client)
+
+
+```js
+async function sendBooking() {
+    const response = await fetch('7api/crete-booking.php'
+    ])
+    
+}
+```js
+
 
 
 
