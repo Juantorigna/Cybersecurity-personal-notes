@@ -28,13 +28,14 @@ Let:
 - K = the shared key; 
 - H = the underlying hash function.
 
-Two keys are produced from the original: 
+Two keys are produced from the oSriginal: 
 
-        Inner_key = XOR_1(K);^*
-        Outer_key = XOR_2(K).
+    Inner_key = XOR_1(K);^*
+    Outer_key = XOR_2(K).
 
-Then:    
-        tag = HMAC(K,M) where tag = H(Outer_key || H(Inner_key || M))^**
+Then: 
+
+    tag = HMAC(K,M) where tag = H(Outer_key || H(Inner_key || M))^**
 
 2) The receiver: 
 -Receives the tag, along with M;
@@ -42,8 +43,15 @@ Then:
 -Checks if tag = expected_tag
 -The comparison must be done in CONSTANT TIME^***
 
-If tag = expected_tag then M is authentic and unmodified; 
-If tag != expected_tag then M is not authentic and has been modified.
+If
+    tag = expected_tag
+
+then M is authentic and unmodified; 
+
+If
+    tag != expected_tag
+
+then M is not authentic and has been modified.
 
 HMac does not answer to the following quetions when follows the structure aferomentioned: 
 
@@ -86,14 +94,11 @@ Need                               Use                            Why
 -----------------------------------------------------------------------------------------------------
 Verify message integrity between | HMac                         | Both parties share the same secret |
 trusted parties                  |                              | key                                |
----------------------------------|------------------------------|------------------------------------|
 Verify sender identity publicly  |Digital signatures (RSA/ECDSA)|Only sender has the private key     |
----------------------------------|------------------------------|------------------------------------|
 Authentication + Authorization + |JWT                           | It contains claims, it can be      |
 Expiry                           |                              | verified without a database        |
----------------------------------|------------------------------|------------------------------------|
 Password storage                 |bcrypt/Argon2                 | Intentuonally slow, includes salt  |
----------------------------------|------------------------------|------------------------------------|
+
 
 
 ^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
