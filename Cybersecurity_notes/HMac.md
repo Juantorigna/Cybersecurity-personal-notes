@@ -23,12 +23,11 @@ A pair using this system has to agree on both the key and the hashing mechanism.
 It often adds little value if no untrusted boundary exists, but it can still protect against client-side tampering or forged requests.
 
 Workflow: 
-1. The sender computes the HMAC: 
-Let: 
+1. The sender computes the HMAC. Let: 
 
-M = The plain message; 
-K = the shared key; 
-H = the underlying hash function.
+- **M** = The plain message; 
+- **K** = the shared key; 
+- **H** = the underlying hash function.
 
 Two keys are produced from the original: 
 
