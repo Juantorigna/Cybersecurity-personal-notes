@@ -2,8 +2,8 @@ Two parties want to communicate, but they want to ensure the contents of their c
 
 HMAC is a cryptographic technique that proves: 
 
-1. Who sent the message (authentication)
-2. The message wasn't changed (integrity)
+- **a** Who sent the message (authentication)
+- **b** The message wasn't changed (integrity)
 
 HMAC does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
 
