@@ -2,16 +2,16 @@ Two parties want to communicate, but they want to ensure the contents of their c
 
 HMAC is a cryptographic technique that proves: 
 
-a) Who sent the message (authentication);
-b) The message wasn't changed (integrity).
+a. Who sent the message (authentication);
+b. The message wasn't changed (integrity).
 
 HMAC does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
 
 HMAC uses:
 
-1) Shared secret key: 
+1. Shared secret key: 
     A shared key needed to authenticate the sender as a trusted party. 
-2) Hash function:
+2. Hash function:
      A mathematical algorithm that has the role of applying a one-way cryptographic transformation to what is sent to the receiver.
      The receiver needs to apply the same method to the plain message and the key in their possession to then confront the result with the received string.
      If there is a match, the message has not been tampered with. 
@@ -23,7 +23,7 @@ A pair using this system has to agree on both the key and the hashing mechanism.
 It often adds little value if no untrusted boundary exists, but it can still protect against client-side tampering or forged requests.
 
 Workflow: 
-1) The sender computes the Hmac: 
+1. The sender computes the Hmac: 
 Let: 
 - M = The plain message; 
 - K = the shared key; 
@@ -38,7 +38,7 @@ Then:
 
     tag = HMAC(K,M) where tag = H(Outer_key || H(Inner_key || M))^**
 
-2) The receiver: 
+2. The receiver: 
 
 -Receives the tag, along with M;
 -Recomputes expected_tag(K, M) using the secret key in their possession; 
@@ -64,10 +64,10 @@ iv.Is it authorized for this action?
 
 The previous questions raise the following vulnerabilities: 
 
-1) Replay attacks (very important). The attacker can send the exact same request just sent; 
-2) Valid BUT unintended message. HMAC proves authorship, not intent;
-3) Context confusion. There must be method + path + scope included in the signature;
-4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
+1. Replay attacks (very important). The attacker can send the exact same request just sent; 
+2. Valid BUT unintended message. HMAC proves authorship, not intent;
+3. Context confusion. There must be method + path + scope included in the signature;
+4. Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
 
 To fully validate a message you must bind HMAC to: 
 
@@ -80,13 +80,13 @@ vi.Sender ID --> Prevents cross-app reuse.
 
 Common real-world use cases: 
 
-a) API Authentication. 
+a. API Authentication. 
 Your app --> sends request to payment API --> Payment API verifies the request came from you. 
-b) Webhook Verification
+b. Webhook Verification
 Stripe sends you a webhook --> "checkout session completed" --> your server verifies Stripe actually sent it
-c) Signed Cookies
+c. Signed Cookies
 The user logs in --> the server creates a session cookie with HAC --> the user returns --> the server checks the cookie hasn't been changed.
-d) File integrity
+d. File integrity
 The user downloads a software --> it comes with an HMAC tag --> before installing it, verify the file wasn't corrupted or modified
 
 Table of when to use HMAC vs alternatives
