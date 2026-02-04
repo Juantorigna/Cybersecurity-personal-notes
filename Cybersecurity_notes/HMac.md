@@ -57,17 +57,17 @@ then M is not authentic and has been modified.
 
 HMAC does not answer to the following quetions when follows the structure aferomentioned: 
 
-**a)** Is this message new?
-**b)** Is it expected now?
-**c)** Is it appropriate for context?
-**d)** Is it authorized for this action?
+- **a)** Is this message new?
+- **b)** Is it expected now?
+- **c)** Is it appropriate for context?
+- **d)** Is it authorized for this action?
 
 The previous questions raise the following vulnerabilities: 
 
-**a)** Replay attacks (very important). The attacker can send the exact same request just sent; 
-**b)** Valid BUT unintended message. HMAC proves authorship, not intent;
-**c)** Context confusion. There must be method + path + scope included in the signature;
-**d)** Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
+- **a)** Replay attacks (very important). The attacker can send the exact same request just sent; 
+- **b)** Valid BUT unintended message. HMAC proves authorship, not intent;
+- **c)** Context confusion. There must be method + path + scope included in the signature;
+- **d)** Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
 
 To fully validate a message you must bind HMAC to: 
 
@@ -177,8 +177,8 @@ You do not need it for:
 
 How this is handled in real code? Most crypto libraries provide safe comparison functions:
 
-**a)** PHP: hash_equals()
-**b)** Python: hmac.compare_digest()
+- **a)** PHP: hash_equals()
+- **b)** Python: hmac.compare_digest()
 
 You should always use these, never == for secrets.
 
@@ -260,9 +260,9 @@ if ($isValid) {
 ```
 Example (2): Api request signing (Client-->Server)
 Situation: My app calls my API, and I want it to ensure the following are true: 
-**a)** The request came from my app; 
-**b)** The rquest hasn't been tampered with; 
-**c)** The request isn't a replay.
+- **a)** The request came from my app; 
+- **b)** The rquest hasn't been tampered with; 
+- **c)** The request isn't a replay.
 
 Step 1: frontend.js (untrusted client)
 
