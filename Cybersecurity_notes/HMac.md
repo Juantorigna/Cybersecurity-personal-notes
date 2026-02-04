@@ -118,6 +118,7 @@ They are public costants with fixed patterns and thus the same for everyone.
     Outer_key = K ⊕ opad (apply XOR with opad on key)
 
 ^^ || stands for "concatenate the bytes in this exact order. 
+
 ^^^ An operation is "constant time" if it takes the same amount of time to run, no matter what the input is.
 If an operation runs faster or slower an attacker can learn info just by measuring how long it takes to perform said operation and its input.
 This is called timing side-channel attack.     
