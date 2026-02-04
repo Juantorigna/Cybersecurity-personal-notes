@@ -182,6 +182,7 @@ between the key material and the message data), and it preserves the security pr
 Examples 
 
 Example (1)
+
 ```php
 //Step 1: generate a secure key
 
@@ -196,8 +197,11 @@ echo "Secret key (store this securely!): " . $keyString . "\n";
 
 //To use the key later, decode it back to bytes 
 $secretKey = base64_decode($keyString);
+```
 
 //_________________________________________________________________________________________//
+
+```php
 //Step 2: store the key securely
 
 //NEVER DO THIS
@@ -214,11 +218,16 @@ function getSecretKey(){
     return base64_decode($key);
 }
 $secretKey = getSecretKey();
+```
 
-//Option 2: web.config files 
+```php
+//Step 2. Option 2: web.config files 
+
 $secret_config_file = require '/var/secret/hmac_config.php';
 $secretKey = base64_decode($secret_config_file['hmac_secret']);
-//_________________________________________________________________________________________//
+```
+
+```php
 //Step 3: Generate HMac
 $message = "Trust me!";
 
@@ -227,7 +236,10 @@ function create_HMAC($secretKey, $message, $algorithm = 'sha256') {
 }
 $sentTag = create_HMAC($secretKey, $message);
 echo $sentTag;
-//_________________________________________________________________________________________//
+```
+______________________________________________________________________________________________
+
+```php
 //Step 4: Verify Hmac 
 $secret_config_file = require '/var/secret/hmac_config.php';
 $secretKey = base64_decode($secret_config_file['hmac_secret']);
@@ -238,7 +250,6 @@ function verifyHMAC($secretKey, $message, $sentTag, $algorithm = 'sha256') {
     return hash_equals($sentTag, $expectedTag); //here's where it produces true or false
 }
 
-
 $isValid = verifyHMAC($secretKey, $message, $sentTag); 
 
 if ($isValid) {
@@ -247,19 +258,19 @@ if ($isValid) {
     echo "You CANNOT trust this message!\n";
 }
 ```
-______________________________________________________________________________________
+______________________________________________________________________________________________
+
 Example (2): Api request signing (Client-->Server)
    Situation: My app calls my API, and I want it to ensure the following are true: 
     a) The request came from my app; 
     b) The rquest hasn't been tampered with; 
     c) The request isn't a replay.
 
-Step 1: frontend.js (untrusted client)
-
+    Step 1: frontend.js (untrusted client)
 
 <script>
 async function sendBooking(data) {
-    const response = await fetch('7api/crete-booking.php', {
+    const response = await fetch('/api/crete-booking.php', {
         method: 'POST';
         header: {
             'Content-Type': 'application/json'
@@ -270,11 +281,12 @@ async function sendBooking(data) {
 }
 </script>
 
-Step 2: trusted boundary (api/create-booking.php)
+    Step 2: trusted boundary (api/create-booking.php)
 
 ```php 
 //this is a protected backend endpoint. Anything coming to is is considered malicious until proven innocent.
-$secretKey = base64_decode(getenv('HMAC_SECRET_KEY')); //base64_decode() is used because environment variales are strings and cryptographic keys must be raw bytes. Base64 is used ONLY for safe storage and transport. 
+
+$secretKey = base64_decode(getenv('HMAC_SECRET_KEY')); //base64_decode() is used because environment variales are strings and cryptographic keys must be raw bytes.Base64 is used ONLY for safe storage and transport. 
 
 $method = $_SERVER['REQUEST_METHOD']; // we include method to prevent using a valid signature for GET to permorm POST actions
 $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); // we include path to prevent replaying a signed request on another endpoint
@@ -328,9 +340,8 @@ echo "Request accepted";
 
 Example (3): Backend-to-Backend HMAC (Internal services)
 
-    Step 1: service_a.php (Sender)
-
 ```php
+    //Step 1: service_a.php (Sender)
 //This is a trusted internal service. However, it still signd requests because of the no-trust assumption of the network, the importance of logging errors. 
 
 $secretKey = base64_decode(getenv('INTERNAL_HMAC_KEY'));
@@ -363,9 +374,10 @@ sendHttpRequest(
     ]
 ); 
 ```
-    Step 2: internal/process.php (Receiver)
-
+    
 ```php
+//Step 2: internal/process.php (Receiver)
+
 $secretKey = base64_decode(getenv('INTERNAL_SECRET_KEY')); 
 
 $body = file_get_contents('php://input'); 
@@ -393,10 +405,9 @@ if (!hash_equals($expected, $signature)) {
 
 Example (4): Signed Cookies (Statless session)
 
-    Step 1
 
-login.php
 ```php
+    //Step 1, login.php
 //user already authenticated via password / MFA
 
 $userId = $authenticatedUserId; 
@@ -423,10 +434,10 @@ setcookie('session', $cookieValue, [
     'samesite' => 'Strict'// CSRF mitigation 
 ]); 
 ```
-    Step 2
-protected.php
-
+  
 ```php
+    //Step 2, protected.php
+    
 if (!isset($_COOKIE['session'])) { // isset() checks whether a variable exists AND is not null
     exit('No session'); 
     } 
