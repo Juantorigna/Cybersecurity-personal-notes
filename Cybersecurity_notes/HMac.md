@@ -1,6 +1,7 @@
 Two parties want to communicate, but they want to ensure the contents of their communication have not been tampered with.
 
-Hmac is a cryptographic technique that proves: 
+HMAC is a cryptographic technique that proves: 
+
 a) Who sent the message (authentication);
 b) The message wasn't changed (integrity).
 
@@ -69,6 +70,7 @@ The previous questions raise the following vulnerabilities:
 4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
 
 To fully validate a message you must bind HMAC to: 
+
 i.Body --> Integrity; 
 ii.Http --> Prevents misuse; 
 iii.Path/action --> Prevents confusion;
@@ -80,16 +82,14 @@ Common real-world use cases:
 
 a) API Authentication. 
 Your app --> sends request to payment API --> Payment API verifies the request came from you. 
-
 b) Webhook Verification
 Stripe sends you a webhook --> "checkout session completed" --> your server verifies Stripe actually sent it
-
 c) Signed Cookies
 The user logs in --> the server creates a session cookie with HAC --> the user returns --> the server checks the cookie hasn't been changed.
-4) File integrity
+d) File integrity
 The user downloads a software --> it comes with an HMAC tag --> before installing it, verify the file wasn't corrupted or modified
 
-Table of when to use Hmac vs alternatives
+Table of when to use HMAC vs alternatives
 
 Need                               Use                            Why
 -----------------------------------------------------------------------------------------------------
@@ -126,6 +126,7 @@ If an operation runs faster or slower an attacker can learn info just by measuri
 This is called timing side-channel attack.     
 
 e.g. 
+
 NOT constant time(dangerous)
 
     compare(a, b):
@@ -135,6 +136,7 @@ NOT constant time(dangerous)
     return true
 
 What happens?
+
 If the first character is wrong → exits immediately
 If the first 10 characters are correct → runs longer
 If all characters are correct → runs longest
@@ -149,12 +151,14 @@ Constant time (safe)
     return result == 0
 
 What happens?
+
 Always loops over all bytes
 Always does the same operations
 Always takes the same time
 No information leaks.
 
-Why does it matter for HMac?
+Why does it matter for HMAC?
+
 If you compare them byte by byte and stop early, an attacker can:
 Send many requests
 Measure response time
@@ -245,7 +249,7 @@ echo $sentTag;
 ______________________________________________________________________________________________
 
 ```php
-//Step 4: Verify Hmac 
+//Step 4: Verify HMAC 
 $secret_config_file = require '/var/secret/hmac_config.php';
 $secretKey = base64_decode($secret_config_file['hmac_secret']);
 
