@@ -31,19 +31,19 @@ Workflow:
 
 Two keys are produced from the original: 
 
-    Inner_key = XOR_1(K);^*
+    Inner_key = XOR_1(K);^
     Outer_key = XOR_2(K).
 
 Then: 
 
-    tag = HMAC(K,M) where tag = H(Outer_key || H(Inner_key || M))^**
+    tag = HMAC(K,M) where tag = H(Outer_key || H(Inner_key || M))^^
 
 2. The receiver: 
 
 - **a)** Receives the tag, along with M;
 - **b)** Recomputes expected_tag(K, M) using the secret key in their possession; 
-- **c)** Checks if tag = expected_tag
-- **d)**The comparison must be done in CONSTANT TIME^***
+- **c)** Checks if tag = expected_tag;
+- **d)**The comparison must be done in CONSTANT TIME^^^
 
 If
     tag = expected_tag
@@ -99,7 +99,7 @@ Table of when to use HMAC vs alternatives
 | Password storage | bcrypt / Argon2 | Intentionally slow; includes salt |
 
 
-^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
+^What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
 If they are indeed different then the result is 1, otherwise it is 0.
 Why does HMAC use XOR instead of hashing?
 XOR allows deterministic, length-preserving key mixing without introducing new secrets. It guarantees structural separation (ensures cryptographic separation
@@ -117,8 +117,8 @@ They are public costants with fixed patterns and thus the same for everyone.
     Inner_key = K ⊕ ipad (apply XOR with ipad on key)
     Outer_key = K ⊕ opad (apply XOR with opad on key)
 
-^** || stands for "concatenate the bytes in this exact order. 
-^*** An operation is "constant time" if it takes the same amount of time to run, no matter what the input is.
+^^ || stands for "concatenate the bytes in this exact order. 
+^^^ An operation is "constant time" if it takes the same amount of time to run, no matter what the input is.
 If an operation runs faster or slower an attacker can learn info just by measuring how long it takes to perform said operation and its input.
 This is called timing side-channel attack.     
 
