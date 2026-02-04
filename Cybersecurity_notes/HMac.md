@@ -268,7 +268,7 @@ Example (2): Api request signing (Client-->Server)
 
     Step 1: frontend.js (untrusted client)
 
-<script>
+```js
 async function sendBooking(data) {
     const response = await fetch('/api/crete-booking.php', {
         method: 'POST';
@@ -279,7 +279,7 @@ async function sendBooking(data) {
     });
     return response.json();
 }
-</script>
+```
 
     Step 2: trusted boundary (api/create-booking.php)
 
@@ -437,7 +437,7 @@ setcookie('session', $cookieValue, [
   
 ```php
     //Step 2, protected.php
-    
+
 if (!isset($_COOKIE['session'])) { // isset() checks whether a variable exists AND is not null
     exit('No session'); 
     } 
