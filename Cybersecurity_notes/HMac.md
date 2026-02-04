@@ -46,54 +46,54 @@ If tag != expected_tag then M is not authentic and has been modified.
 
 HMac does not answer to the following quetions when follows the structure aferomentioned: 
 
-    -Is this message new?
-    -Is it expected now?
-    -Is it appropriate for context?
-    -Is it authorized for this action?
+    i.Is this message new?
+    ii.Is it expected now?
+    iii.Is it appropriate for context?
+    iv.Is it authorized for this action?
 
 The previous questions raise the following vulnerabilities: 
 
-    1) Replay attacks (very important). The attacker can send the exact same request just sent; 
-    2) Valid BUT unintended message. HMac proves authorship, not intent;
-    3) Context confusion. There must be method + path + scope included in the signature;
-    4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
+1) Replay attacks (very important). The attacker can send the exact same request just sent; 
+2) Valid BUT unintended message. HMac proves authorship, not intent;
+3) Context confusion. There must be method + path + scope included in the signature;
+4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
 
 To fully validate a message you must bind HMac to: 
-    -Body --> Integrity; 
-    -Http --> Prevents misuse; 
-    -Path/action --> Prevents confusion;
-    -Timestamp --> Prevents replay;
-    -Nonce --> Prevents duplication; 
-    -Sender ID --> Prevents cross-app reuse.
+    i.Body --> Integrity; 
+    ii.Http --> Prevents misuse; 
+    iii.Path/action --> Prevents confusion;
+    iv.Timestamp --> Prevents replay;
+    v.Nonce --> Prevents duplication; 
+    vi.Sender ID --> Prevents cross-app reuse.
 
 Common real-world use cases: 
 
-    a) API Authentication. 
-       Your app --> sends request to payment API --> Payment API verifies the request came from you. 
+a) API Authentication. 
+Your app --> sends request to payment API --> Payment API verifies the request came from you. 
 
-    b) Webhook Verification
-       Stripe sends you a webhook --> "checkout session completed" --> your server verifies Stripe actually sent it
-    
-    c) Signed Cookies
-       The user logs in --> the server creates a session cookie with HMac --> the user returns --> the server checks the cookie 
-       hasn't been changed.
-    4) File integrity
-       The user downloads a software --> it comes with an HMac tag --> before installing it, verify the file wasn't corrupted or modified
+b) Webhook Verification
+Stripe sends you a webhook --> "checkout session completed" --> your server verifies Stripe actually sent it
+
+c) Signed Cookies
+The user logs in --> the server creates a session cookie with HMac --> the user returns --> the server checks the cookie hasn't been changed.
+4) File integrity
+The user downloads a software --> it comes with an HMac tag --> before installing it, verify the file wasn't corrupted or modified
 
 Table of when to use Hmac vs alternatives
 
 Need                               Use                            Why
-_____________________________________________________________________________________________________
+-----------------------------------------------------------------------------------------------------
 Verify message integrity between | HMac                         | Both parties share the same secret |
 trusted parties                  |                              | key                                |
-_________________________________|______________________________|____________________________________|
+---------------------------------|------------------------------|------------------------------------|
 Verify sender identity publicly  |Digital signatures (RSA/ECDSA)|Only sender has the private key     |
-_________________________________|______________________________|____________________________________|
+---------------------------------|------------------------------|------------------------------------|
 Authentication + Authorization + |JWT                           | It contains claims, it can be      |
 Expiry                           |                              | verified without a database        |
-_________________________________|______________________________|____________________________________|
+---------------------------------|------------------------------|------------------------------------|
 Password storage                 |bcrypt/Argon2                 | Intentuonally slow, includes salt  |
-_________________________________|______________________________|____________________________________|
+---------------------------------|------------------------------|------------------------------------|
+
 
 ^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
 If they are indeed different then the result is 1, otherwise it is 0.
@@ -107,19 +107,19 @@ between the key material and the message data), and it preserves the security pr
     ----------------
     K ⊕ ipad = 1000
 
-    What are opad and ipad?
-    They are public costants with fixed patterns and thus the same for everyone. 
-    
+What are opad and ipad?
+They are public costants with fixed patterns and thus the same for everyone. 
+
     Inner_key = K ⊕ ipad (apply XOR with ipad on key)
     Outer_key = K ⊕ opad (apply XOR with opad on key)
 
 ^** || stands for "concatenate the bytes in this exact order. 
 ^*** An operation is "constant time" if it takes the same amount of time to run, no matter what the input is.
-     If an operation runs faster or slower an attacker can learn info just by measuring how long it takes to perform said operation and its input.
-     This is called timing side-channel attack.     
+If an operation runs faster or slower an attacker can learn info just by measuring how long it takes to perform said operation and its input.
+This is called timing side-channel attack.     
 
-    e.g. 
-    NOT constant time(dangerous)
+e.g. 
+NOT constant time(dangerous)
 
     compare(a, b):
     for i from 0 to len: 
@@ -127,55 +127,55 @@ between the key material and the message data), and it preserves the security pr
             return false
     return true
 
-    What happens?
-    If the first character is wrong → exits immediately
-    If the first 10 characters are correct → runs longer
-    If all characters are correct → runs longest
-    Execution time leaks information
-    An attacker can guess the value one byte at a time.
+What happens?
+If the first character is wrong → exits immediately
+If the first 10 characters are correct → runs longer
+If all characters are correct → runs longest
+Execution time leaks information
+An attacker can guess the value one byte at a time.
 
-    Constant time (safe)
+Constant time (safe)
 
     compare (a, b):
     for i from 0 to len: 
         result |= a[i] XOR b[i]
     return result == 0
 
-    What happens?
-    Always loops over all bytes
-    Always does the same operations
-    Always takes the same time
-    No information leaks.
-    
-    Why does it matter for HMac?
-    If you compare them byte by byte and stop early, an attacker can:
-    Send many requests
-    Measure response time
-    Learn which bytes are correct
-    Forge a valid HMAC
+What happens?
+Always loops over all bytes
+Always does the same operations
+Always takes the same time
+No information leaks.
 
-    IMPORTANT FOR FUTURE IN-DEPTH ANALYSIS: 
-    Where is constant time required?
+Why does it matter for HMac?
+If you compare them byte by byte and stop early, an attacker can:
+Send many requests
+Measure response time
+Learn which bytes are correct
+Forge a valid HMAC
 
-        You need constant-time behavior when handling secrets, such as:
-        -HMac tag comparison
-        -Password hash comparison
-        -Cryptographic keys
-        -Authentication tokens
+IMPORTANT FOR FUTURE IN-DEPTH ANALYSIS: 
+Where is constant time required?
 
-        You do not need it for:
-        -normal business logic
-        -UI code
-        -database queries
+You need constant-time behavior when handling secrets, such as:
+-HMac tag comparison
+-Password hash comparison
+-Cryptographic keys
+-Authentication tokens
 
-        How this is handled in real code
+You do not need it for:
+-normal business logic
+-UI code
+-database queries
 
-        Most crypto libraries provide safe comparison functions:
+How this is handled in real code
 
-        -PHP: hash_equals()
-        -Python: hmac.compare_digest()
-        
-        You should always use these, never == for secrets.
+Most crypto libraries provide safe comparison functions:
+
+-PHP: hash_equals()
+-Python: hmac.compare_digest()
+
+You should always use these, never == for secrets.
 
 Examples 
 
