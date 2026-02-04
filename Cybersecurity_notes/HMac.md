@@ -4,9 +4,9 @@ Hmac is a cryptographic technique that proves:
 a) Who sent the message (authentication);
 b) The message wasn't changed (integrity).
 
-HMac does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
+HMAC does not provide confidentiality; encryption (e.g. TLS/AES) is required for privacy.
 
-HMac uses:
+HMAC uses:
 
 1) Shared secret key: 
     A shared key needed to authenticate the sender as a trusted party. 
@@ -15,7 +15,7 @@ HMac uses:
      The receiver needs to apply the same method to the plain message and the key in their possession to then confront the result with the received string.
      If there is a match, the message has not been tampered with. 
      It is preferable to use an hash function since it is a deterministic, fast, and constant-time algorithm like SHA-256 or SHA-512.
-     The algorithm choice for HMac is fundamentally different from that of password storing. As a matter of fact, salt and pepper are not applied in this context.  
+     The algorithm choice for HMAC is fundamentally different from that of password storing. As a matter of fact, salt and pepper are not applied in this context.  
 
 A pair using this system has to agree on both the key and the hashing mechanism. 
 
@@ -53,7 +53,7 @@ If
 
 then M is not authentic and has been modified.
 
-HMac does not answer to the following quetions when follows the structure aferomentioned: 
+HMAC does not answer to the following quetions when follows the structure aferomentioned: 
 
 i.Is this message new?
 ii.Is it expected now?
@@ -63,11 +63,11 @@ iv.Is it authorized for this action?
 The previous questions raise the following vulnerabilities: 
 
 1) Replay attacks (very important). The attacker can send the exact same request just sent; 
-2) Valid BUT unintended message. HMac proves authorship, not intent;
+2) Valid BUT unintended message. HMAC proves authorship, not intent;
 3) Context confusion. There must be method + path + scope included in the signature;
 4) Ordering attacks. If messages are processed in sequence, an attacker can replay or reorder them. 
 
-To fully validate a message you must bind HMac to: 
+To fully validate a message you must bind HMAC to: 
 i.Body --> Integrity; 
 ii.Http --> Prevents misuse; 
 iii.Path/action --> Prevents confusion;
@@ -84,15 +84,15 @@ b) Webhook Verification
 Stripe sends you a webhook --> "checkout session completed" --> your server verifies Stripe actually sent it
 
 c) Signed Cookies
-The user logs in --> the server creates a session cookie with HMac --> the user returns --> the server checks the cookie hasn't been changed.
+The user logs in --> the server creates a session cookie with HAC --> the user returns --> the server checks the cookie hasn't been changed.
 4) File integrity
-The user downloads a software --> it comes with an HMac tag --> before installing it, verify the file wasn't corrupted or modified
+The user downloads a software --> it comes with an HMAC tag --> before installing it, verify the file wasn't corrupted or modified
 
 Table of when to use Hmac vs alternatives
 
 Need                               Use                            Why
 -----------------------------------------------------------------------------------------------------
-Verify message integrity between | HMac                         | Both parties share the same secret |
+Verify message integrity between | HMAC                         | Both parties share the same secret |
 trusted parties                  |                              | key                                |
 Verify sender identity publicly  |Digital signatures (RSA/ECDSA)|Only sender has the private key     |
 Authentication + Authorization + |JWT                           | It contains claims, it can be      |
@@ -164,7 +164,7 @@ IMPORTANT FOR FUTURE IN-DEPTH ANALYSIS:
 Where is constant time required?
 
 You need constant-time behavior when handling secrets, such as:
--HMac tag comparison
+-HMAC tag comparison
 -Password hash comparison
 -Cryptographic keys
 -Authentication tokens
