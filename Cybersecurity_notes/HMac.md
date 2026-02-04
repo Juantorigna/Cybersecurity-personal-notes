@@ -91,15 +91,12 @@ The user downloads a software --> it comes with an HMAC tag --> before installin
 
 Table of when to use HMAC vs alternatives
 
-Need                               Use                            Why
------------------------------------------------------------------------------------------------------
-Verify message integrity between | HMAC                         | Both parties share the same secret |
-trusted parties                  |                              | key                                |
-Verify sender identity publicly  |Digital signatures (RSA/ECDSA)|Only sender has the private key     |
-Authentication + Authorization + |JWT                           | It contains claims, it can be      |
-Expiry                           |                              | verified without a database        |
-Password storage                 |bcrypt/Argon2                 | Intentuonally slow, includes salt  |
-
+| Need | Use | Why |
+|------|-----|-----|
+| Verify message integrity between trusted parties | HMAC | Both parties share the same secret key |
+| Verify sender identity publicly | Digital signatures (RSA/ECDSA) | Only sender has the private key |
+| Authentication + Authorization + Expiry | JWT | Contains claims; can be verified without a database |
+| Password storage | bcrypt / Argon2 | Intentionally slow; includes salt |
 
 
 ^*What is XOR? XOR is an acronym standing for "exlusive OR". It's a logical operation that aims to compare two bits to then answer if they are different. 
