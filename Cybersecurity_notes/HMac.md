@@ -149,36 +149,33 @@ Constant time (safe)
 
 What happens?
 
-Always loops over all bytes
-Always does the same operations
-Always takes the same time
-No information leaks.
+1. Always loops over all bytes
+2. Always does the same operations
+3. Always takes the same time
+4. No information leaks.
 
-Why does it matter for HMAC?
+Why does it matter for HMAC? If you compare them byte by byte and stop early, an attacker can:
 
-If you compare them byte by byte and stop early, an attacker can:
-Send many requests
-Measure response time
-Learn which bytes are correct
-Forge a valid HMAC
+1. Send many requests
+2. Measure response time
+3. Learn which bytes are correct
+4. Forge a valid HMAC
 
 IMPORTANT FOR FUTURE IN-DEPTH ANALYSIS: 
-Where is constant time required?
 
-You need constant-time behavior when handling secrets, such as:
--HMAC tag comparison
--Password hash comparison
--Cryptographic keys
--Authentication tokens
+Where is constant time required? You need constant-time behavior when handling secrets, such as:
+
+1. HMAC tag comparison
+2. Password hash comparison
+3. Cryptographic keys
+4. Authentication tokens
 
 You do not need it for:
--normal business logic
--UI code
--database queries
+1. Normal business logic
+2. UI code
+3. database queries
 
-How this is handled in real code
-
-Most crypto libraries provide safe comparison functions:
+How this is handled in real code? Most crypto libraries provide safe comparison functions:
 
 -PHP: hash_equals()
 -Python: hmac.compare_digest()
