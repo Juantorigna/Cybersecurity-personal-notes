@@ -46,10 +46,10 @@ If tag != expected_tag then M is not authentic and has been modified.
 
 HMac does not answer to the following quetions when follows the structure aferomentioned: 
 
-    - Is this message new?
-    - Is it expected now?
-    - Is it appropriate for context?
-    - Is it authorized for this action?
+    -Is this message new?
+    -Is it expected now?
+    -Is it appropriate for context?
+    -Is it authorized for this action?
 
 The previous questions raise the following vulnerabilities: 
 
