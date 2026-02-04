@@ -1,3 +1,6 @@
+
+<?php
+/*
 HMac 
 Two parties want to communicate, but they want to ensure the contents of their communication have not been tampered with.
 
@@ -177,14 +180,15 @@ between the key material and the message data), and it preserves the security pr
         -Python: hmac.compare_digest()
         
         You should always use these, never == for secrets.
+*/
 
-Examples 
+//Examples 
 
-(1)
+//1
 
-    -Step 1: generate a secure key
+//Step 1: generate a secure key
 
-```php
+<?php
 function generateSecretKey($length = 32) {
     $secretKey = random_bytes($length);
     return base64_encode($secretKey);
@@ -247,8 +251,7 @@ if ($isValid) {
 }else{
     echo "You CANNOT trust this message!\n";
 }
-```
-
+?>
 /**Example 2: Api request signing (Client-->Server)
    Situation: My app calls my API, and I want it to ensure the following are true: 
     a) The request came from my app; 
@@ -260,13 +263,13 @@ if ($isValid) {
 tep 1: frontend.js (untrusted client)
 
 
-```js
+<script>
 async function sendBooking() {
     const response = await fetch('7api/crete-booking.php'
     ])
     
 }
-```js
+</script>
 
 
 
