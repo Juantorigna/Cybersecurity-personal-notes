@@ -10,7 +10,7 @@ HMAC uses:
 
 - **a)** A shared secret key: 
     A shared key needed to authenticate the sender as a trusted party. 
-- **2b** Hash function:
+- **b)** Hash function:
      A mathematical algorithm that has the role of applying a one-way cryptographic transformation to what is sent to the receiver.
      The receiver needs to apply the same method to the plain message and the key in their possession to then confront the result with the received string.
      If there is a match, the message has not been tampered with. 
