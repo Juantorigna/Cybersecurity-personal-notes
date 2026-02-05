@@ -52,7 +52,7 @@ then M is authentic and unmodified.
 
 If
 
-tag != expected_tag
+    tag != expected_tag
 
 then M is not authentic and has been modified.
 
