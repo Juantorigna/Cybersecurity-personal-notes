@@ -260,6 +260,7 @@ It is useful cause if we ever forget to run
 We might end up creating tables in the wrong database. 
 
 ### Section 2. Create tables. 
+It is recommended to run the code in this section as "**camp_migrator**".
 Tables are the data structure of a database. 
 #### Create **users** table 
 Run this at mysql>
@@ -362,6 +363,83 @@ As always, a golden rule od coding is building concreate healthy habits that las
 - **b)** Don't expose intrnal column names blindly in APIs (SELECT * --> avoid for APIs. A good protocol is to manually select the columns you actually need, SELECT public_id, email, created_at FROM users)
 - **c)** Minimize what your endpoints return (principle of least data)
 
+### Part 4. DB-backend mini app
+#### Section 1. Defining the scope
+Our goal is to buld a small project in which we'll build a read-only page that leverages RO credentials, a series of lists pitches from the table *pitches*, we'll create a reservation floe thst leverages RW credentials, plus we'll build the necessary architecture around the SQL code using HTML, JS, and PHP. 
 
+#### Section 2. Preject directory
+
+It is useful to keep a clean directory srchitecture like the following: 
+
+    /public/
+    pitches.php
+    reservation_new.php
+    reservation_create.php
+
+    /app/
+    db.php
+    security.php
+    config.php   (or use environment variables)
+
+Using this layout we'll keep everything under 7public web-accessible, while having /app as internal code only
+
+### Section 3. PHP DB connections with least privilege 
+
+In real projects you’d use env vars; this keeps it simple for learning.
+
+```php
+    //app/config.php
+
+    <?php
+// app/config.php
+    return [
+    'db' => [
+        'host' => '127.0.0.1',
+        'name' => 'camping_db',
+        'charset' => 'utf8mb4',
+
+        'ro_user' => 'camp_app_ro',
+        'ro_pass' => '...',
+
+        'rw_user' => 'camp_app_rw',
+        'rw_pass' => '...',
+    ]
+    ];
+```
+```php
+    //app/db.php (PDO)
+
+    function pdo_common(array $cfg, string, $user, string, $pass): PDO {
+        $dsn = sprintf(
+            "mysql:host=%s;dbname=%;charset=%s",
+            $cfg['host'],
+            $cfg['name'],
+            $cfg['charset']
+        );
+
+        $pdo = new PDO($dsn, $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, //trhow exceptions
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, //associative arryas
+            PDO::ATTR_EMULATE_PREPARES => false, //real prepared statements
+        ]);
+        return $pdo;
+    }
+
+    function db_ro(): PDO {
+        $config = require_DIR_ . '/config.php';
+        $db = $config['db']; 
+        return pdo_common($db, $db['ro_user'], $db['ro_pass']);
+    }
+
+    function db_rw(): PDO {
+        $config = require_DIR_ . 'config.php';
+        $db = $config['db'];
+        return pdo_common($db, $db['rw_user'], $db['rw_pass']);
+    }
+```
+We have a generic fucntion we've called **pdo_common()** that knows how to build a MySQL connection. Then, we have two smaller wrappers. <br>
+**db_ro()** is used to connect via the read-only user from config.php. The same goes for **db_rw()** with the read and write permissions. 
+
+Code segmentation and explanation: 
 
 
