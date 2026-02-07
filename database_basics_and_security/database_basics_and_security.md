@@ -117,20 +117,20 @@ You'll be asked for your password, and if it is correct you'll have access to yo
 
 Once connected, run the following: 
 ```sql
-    SELECT VERSION(); //it tells you the MySQL you are running
-    SHOW DATABASES; //it tells you the databases you already have created
+    SELECT VERSION(); /*it tells you the MySQL you are running*/
+    SHOW DATABASES; /*it tells you the databases you already have created */
 ```
 If you already have a db, you can run the following to start using it: 
-
-    USE databasename //where "databasename is you db name
-
+```sql
+    USE databasename /* where "databasename is you db name*/
+```
 ### Section 1. Create a database (schema)
 
 If the db doesn't exist yet, and you are building it form scratch, then run: 
 ```sql
     CREATE DATABASE the_name_you_want; 
-        DEFAULT CHARACTER SET utf8mb4 //utf8mb4 is the modern "full UTF-8" for MySQL
-        DEFAULT COLLATE utf8mb4_0900_ai_ci; //this breaks down in multiple parts. **utf8mb4** is described above; **0900** stands for UNicode rules from teh UCA; **ai** accent-insensitive; **ci** stands for case insensitive
+        DEFAULT CHARACTER SET utf8mb4 /*utf8mb4 is the modern "full UTF-8" for MySQL*/
+        DEFAULT COLLATE utf8mb4_0900_ai_ci; /*this breaks down in multiple parts. **utf8mb4** is described above; **0900** stands for UNicode rules from teh UCA; **ai** accent-insensitive; **ci** stands for case insensitive*/
 ```
 
 The expected query is "**Query OK, 1 row affected**".
