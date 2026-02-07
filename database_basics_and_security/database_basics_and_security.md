@@ -128,7 +128,7 @@ If you already have a db, you can run the following to start using it:
 
 If the db doesn't exist yet, and you are building it form scratch, then run: 
 ```sql
-    CREATE DATABASE the_name_you_want; 
+    CREATE DATABASE the_name_you_want
         DEFAULT CHARACTER SET utf8mb4 /*utf8mb4 is the modern "full UTF-8" for MySQL*/
         DEFAULT COLLATE utf8mb4_0900_ai_ci; /*this breaks down in multiple parts. **utf8mb4** is described above; **0900** stands for UNicode rules from teh UCA; **ai** accent-insensitive; **ci** stands for case insensitive*/
 ```
@@ -154,8 +154,8 @@ Tables are the data structure of a database.
 Run this at mysql>
 
 ```sql
-        CREATE TABLE users (
-    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+   CREATE TABLE users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, /*big stands for "bigger range. We'll use it as Primary Key (PK)*/
     public_id CHAR(26) NOT NULL,
     email VARCHAR(254) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
@@ -223,3 +223,35 @@ We'll now add a table for reservations:
             CHECK (departure_date > arrival_date)
         ) ENGINE=InnoDB;
 ```
+
+### Section 3. Security note.
+#### Why should IDs not be guessable?
+Let's start by defining a problem and then find the solution to it. If our API exposes: 
+
+```sql
+/reservations/123
+/reservations/124
+```
+
+Attackers can try IDOR-style guessing (InsecureDirect Object Reference): "what if I request someone else's reservation?" <br>
+Even if our authorization is correct, guessable IDs can leak internal volume (how many rows are there), it cna make scraping easier, and it increases risk if an auth check on one endipoint is ever missed. 
+
+Now tht we have our probem, how do we solve it?<br>
+A first common solutuion is using two IDs, one private (auto-increment), one public (opaque, to show to the clients). <br>
+Good public-id format options are: 
+- **a)** ULID. 26 chars, sortable, good for distributed systems
+- **b)** UUID. 36 chars, commonly used
+- **c)** our own custom random token that must have *at least 128 bits of randomness*
+
+!! Remember !! Non-guessable ids help, but never subtitute authorization. 
+
+##### Section 3.1. Security note. Avoiding over-exposed internal structure. 
+As always, a golden rule od coding is building concreate healthy habits that last. Some to keep in our toolbox are: 
+
+- **a)** Don't return raw SQL errors to users, log them on server-side instead
+- **b)** Don't expose intrnal column names blindly in APIs (SELECT * --> avoid for APIs. A good protocol is to manually select the columns you actually need, SELECT public_id, email, created_at FROM users)
+- **c)** Minimize what your endpoints return (principle of least data)
+
+
+
+
