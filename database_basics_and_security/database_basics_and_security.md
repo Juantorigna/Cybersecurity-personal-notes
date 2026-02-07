@@ -197,7 +197,7 @@ Since in our example we are building  db for a camping, we'll create a table ded
 
 We'll now add a table for reservations: 
 
-    ```sql
+```sql
     CREATE TABLE reservations (
         id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, 
         public_id CHAR(26) NOT NULL, 
@@ -220,6 +220,6 @@ We'll now add a table for reservations:
             ON DELETE RESTRICT ON UPDATE CASCADE, 
 
         CONSTRAINT chk_dates
-            CHEK (departure_date > arrival_date)
+            CHECK (departure_date > arrival_date)
         ) ENGINE=InnoDB;
-    ```
+```
