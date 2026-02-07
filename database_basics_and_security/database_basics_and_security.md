@@ -9,7 +9,7 @@ Some important context first. It is important to always have a threat-driven min
 
 ### Section 1.1. Connect via Command Line
 
-Open a terminal in your db dir, and run: 
+Open a terminal in your DB dir, and run: 
 ```sql
     mysql -u root -p
 ```
@@ -19,7 +19,7 @@ Open a terminal in your db dir, and run:
 
 By writing your account's password you'll be linked to MySQL servers. If successful, you'll see: 
 
-    Welcome to the MySQL monitor
+    Welcome to the MySQL monitor.
     mysql>
 
 ### Section 2. Connet via GUI (Workbench)
@@ -32,22 +32,23 @@ Start by opening MySQL Workbench, then create a new connection by:
 4. Password: store or promt 
 5. Test connection --> connect 
 
-Sometimes GUIs are preffered over CLI since they are useful for visualizing schemas, reduce human error while browsing data (due to the possibility of visualizing it as we said before), help during debugging. 
+Sometimes GUIs are preffered over CLI since they are useful for visualizing schemas, reduce human error while browsing data (due to the possibility of visualizing it as we said before), help during debugging. However, GUI can increase risk if the machine is shared, and if our profile is compromised. 
 
 ### Section 3. Understanding users, hosts, and ports (IMPORTANT)
 
 By running the following inside MySQL: 
-
-    SELECT user, host FROM mysql.user
-
+```sql
+    SELECT user,
+    host FROM mysql.user
+```
 We'll see outputs like: 
 ```sql
     root@localhost
     mysql.session@localhost
 ```
+These inputs help us seeing existing account through admin view.<br>
 
-**Why do users have a host?**
-
+**Why do users have a host?** <br>
 In MySQL
 ```sql
     'user'@'host'
@@ -55,13 +56,12 @@ In MySQL
 
 is the real identiy, not the username. This means that
 ```sql
-    "root@localhost" != root@%
+    "root@localhost" != root@% /* they are not the same account*/
 ```
 
-Even if the name is the same, the scope is different. This is very important for security. 
+Even if the name is the same, the scope is different. This is very important for security. <br>
 
-**How does MySQL use host + port?**
-
+**How does MySQL use host + port?**<br>
 The port (in our case 3306) identifies the server. Meanwhile, the host identifies **where** the client is allowed from. 
 
 Examples: 
@@ -69,21 +69,24 @@ Examples:
 - **b)** % means it can run anywhere (this represent a security risk)
 - **c)** 192.168.1.% means it can run on LAN only
 
+As soon as we start using non-admin introspection, we won't be able to query **mysql.user** anymore. This is actually good. A normal app user should never be allowed to inspect all server account. 
+
 ### Secton 5. Why are root/admin accounts dangerous?
 
 **root** can perform all actions on the database, such as: 
 
-- Drop any db
+- Drop any DB
 - Read any table
 - Create users
 - Grant privileges
 - Disable security features
 
-If an attacker gets access to root by infiltraticng one of your scripts. they get full access to our db. To our concern, in the case of a script having root access to our db, is not only the intentions of an attacker, but also any possible bug. In the case of a bug dealing in a undesireded manner with our db, we'd face irreversable damage to the db data. 
+If an attacker gets access to root by infiltraticng one of your scripts. they get full access to our DB. To our concern, in the case of a script having root access to our DB, it is not only the intentions of an attacker, but also any possible bug tht could end up being disrupted. In the case of a bug dealing in an undesireded manner with our DB, we'd face irreversable damage to the DB data. <br>
+An attacker getting root could **DROP** databases and/or tables, read everything, create other users, grant privileges, weaken security configuration. In this scenario any SQL injection becomes catastrophic and any leaked **.env** file means full DB takeover.
 
 ### Section 6. Principle of Least Privilege
 
-Here's the golden rule to db security: 
+Here's the golden rule to DB security: 
 
 **A component/script should have only the permission it stricly needs.**
 
@@ -96,11 +99,21 @@ Component | Needs
 |Migration script | CREATE |
 |Root | Setup only |
 
+Least privilege is the main way to reduce blast radius. 
+
+### Section 7. The ideal workflow
+How would an ideal least privilege workflow b structured, then?
+
+- **a)** **root**. Used only to set up and crete a DB.
+- **b)** **migrator/schema user**. Used for schema evolution, hence creating and altering tables, indexes, constraints, etc. 
+- **c)** **app_rw**. Read and write only. Used by endpoint to create and/or update data. It should not be allowed to alter data. 
+- **d)** **app_ro**. Read only, used by paged to display data only. It should not be allowed to write anything. 
+
 ## Part 2 - Database and schema creation (MySQL)
 
 During this section we'll learn while building a small database for a camping/reservation app. The main touched topics will be: 
 
-- **a)** what a schema is and how it builds our  db
+- **a)** what a schema is and how it builds our  DB
 - **b)** tables
 - **c)** columns with correct data types
 - **d)** primary keys with auto-increment
@@ -120,13 +133,13 @@ Once connected, run the following:
     SELECT VERSION(); /*it tells you the MySQL you are running*/
     SHOW DATABASES; /*it tells you the databases you already have created */
 ```
-If you already have a db, you can run the following to start using it: 
+If you already have a DB, you can run the following to start using it: 
 ```sql
-    USE databasename /* where "databasename is you db name*/
+    USE databasename /* where "databasename is you DB name*/
 ```
 ### Section 1. Create a database (schema)
 
-If the db doesn't exist yet, and you are building it form scratch, then run: 
+If the DB doesn't exist yet, and you are building it form scratch, then run: 
 ```sql
     CREATE DATABASE the_name_you_want
         DEFAULT CHARACTER SET utf8mb4 /*utf8mb4 is the modern "full UTF-8" for MySQL*/
@@ -135,7 +148,7 @@ If the db doesn't exist yet, and you are building it form scratch, then run:
 
 The expected query is "**Query OK, 1 row affected**".
     
-An important command to check which db you're using is: 
+An important command to check which DB you're using is: 
 ```sql
     SELECT DATABASE(); 
 ```
@@ -170,7 +183,7 @@ The expected query telling you everything has worked fine is "**Query OK...**"
 
 **What do these commands mean?
 
-- **a)** UNSIGNED. A numeric column lie **INT** normally can store negative and positive numbers. By using UNSIGNED we force positive only numbers in our db. 
+- **a)** UNSIGNED. A numeric column lie **INT** normally can store negative and positive numbers. By using UNSIGNED we force positive only numbers in our DB. 
 - **b)** VARCHAR(20). It stands for "a string up to 20 characters long.
 - **c)** UNIQUE. It's a constraint that enforces values in a column (or grups of columns) to be different. By having UNIQUE KEY uq_users_email (email) we avoid having rows with a mail already present in another row. **uq_users_email** is just the name we adopt for the unique constraint.
 - **d)** ENGINE=InnoDB. My SQL can store tables using different storage engines. What's a store engine? A store engine is the internal system MySQL uses to store and manage the table on disk. InnoDB is the current standard. InnoDB provides a series of features that can be helpful, such as: foreign keys (relationships like **reservation.user_id -> user.id**), row-level locking (better concurrency when multiple users book at one for example), transactions (all-or-nothing changes) ensure that in a multi-step process all steps are completed in order to grant row creation. If even one step is jumped, then all are discarted. Example: both a reservation procedure AND  the payment must be completed in order to generate the row. 
@@ -183,7 +196,7 @@ After running the code above we can check it writing:
 ```
 If everything works out fine, we should see columns including headers like id, public:id, email, etc. 
 
-Since in our example we are building  db for a camping, we'll create a table dedicated to each pitch: 
+Since in our example we are building  DB for a camping, we'll create a table dedicated to each pitch: 
 ```sql
     CREATE TABLE pitches (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
