@@ -2,7 +2,7 @@
 
 ## Part one 
 
-In this session we'll see how to set MySQL to run locally, how to connect via CLI and GUI, understanding users, hosts, and ports. Additionally we'll see why root is dangerous, and finally we'll learn how to create a non-admin workflow.
+In this section we'll see how to set MySQL to run locally, how to connect via CLI and GUI, understanding users, hosts, and ports. Additionally we'll see why root is dangerous, and finally we'll learn how to create a non-admin workflow.
 
 ### Section 1
 Some important context first. It is important to always have a threat-driven mindset. In this way, we'll work keeping into account that the db might eventually be exposed, the credentials might be leaked, bugs could happen. 
@@ -91,9 +91,95 @@ Component | Needs
 |Migration script | CREATE |
 |Root | Setup only |
 
+## Part 2 - Database and schema creation (MySQL)
 
+During this section we'll learn while building a small database for a camping/reservation app. The main touched topics will be: 
 
+- **a)** what a schema is and how it builds our  db
+- **b)** tables
+- **c)** columns with correct data types
+- **d)** primary keys with auto-increment
+- **e)** some first simple security design chioces
 
+### Section 0. Open MySQL and confirm where you are
 
+Open your terminal and access to MySQL using the commands learned from Part 1: 
+    mysql -u root -p
 
+You'll be asked for your password, and if it is correct you'll have access to your MySQL account. 
 
+Once connected, run the following: 
+
+    SELECT VERSION(); //it tells you the MySQL you're running
+    SHOW DATABASES; //it tells you the databases you already have created
+
+If you already have a db, you can run the following to start using it: 
+
+    USE databasename //where "databasename is you db name
+
+### Section 1. Create a database (schema)
+
+If the db doesn't exist yet, and you are building it form scratch, then run: 
+
+    CREATE DATABASE the_name_you_want; 
+        DEFAULT CHARACTER SET utf8mb4 //utf8mb4 is the modern "full UTF-8" for MySQL
+        DEFAULT COLLATE utf8mb4_0900_ai_ci; //this breaks down in multiple parts. **utf8mb4** is described above; **0900** stands for UNicode rules from teh UCA; **ai** accent-insensitive; **ci** stands for case insensitive
+
+The expected query is "**Query OK, 1 row affected**".
+    
+An important command to check which db you're using is: 
+
+    SELECT DATABASE(); 
+
+It is useful cause if we ever forget to run
+
+    USE databasename; 
+
+We might end up creating tables in the wrong database. 
+
+### Section 2. Create tables. 
+
+Tables are the data structure of a database. 
+
+#### Create **users** table 
+
+Run this at mysql>
+
+        CREATE TABLE users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    public_id CHAR(26) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_users_public_id (public_id),
+    UNIQUE KEY uq_users_email (email)
+    ) ENGINE=InnoDB;
+
+The expected query telling you everything has worked fine is "**Query OK...**"
+
+**What do these commands mean?
+
+- **a)** UNSIGNED. A numeric column lie **INT** normally can store negative and positive numbers. By using UNSIGNED we force positive only numbers in our db. 
+- **b)** VARCHAR(20). It stands for "a string up to 20 characters long.
+- **c)** UNIQUE. It's a constraint that enforces values in a column (or grups of columns) to be different. By having UNIQUE KEY uq_users_email (email) we avoid having rows with a mail already present in another row. **uq_users_email** is just the name we adopt for the unique constraint.
+- **d)** ENGINE=InnoDB. My SQL can store tables using different storage engines. What's a store engine? A store engine is the internal system MySQL uses to store and manage the table on disk. InnoDB is the current standard. InnoDB provides a series of features that can be helpful, such as: foreign keys (relationships like **reservation.user_id -> user.id**), row-level locking (better concurrency when multiple users book at one for example), transactions (all-or-nothing changes) ensure that in a multi-step process all steps are completed in order to grant row creation. If even one step is jumped, then all are discarted. Example: both a reservation procedure AND  the payment must be completed in order to generate the row. 
+- **e)** Row-level locking. Better concurrency when multiple users book at once. Only one event at a time can be processed. 
+- **f)** Better crach recovery than older engines. 
+
+After running the code above we can check it writing: 
+
+    DESCRIBE users; 
+
+If everything works out fine, we should see columns including headers like id, public:id, email, etc. 
+
+Since in our example we are building  db for a camping, we'll create a table dedicated to each pitch: 
+
+    CREATE TABLE pitches (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    code VARCHAR(20) NOT NULL,
+    has_electricity BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_pitches_code (code)
+    ) ENGINE=InnoDB;
