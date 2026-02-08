@@ -363,7 +363,7 @@ As always, a golden rule od coding is building concreate healthy habits that las
 - **b)** Don't expose intrnal column names blindly in APIs (SELECT * --> avoid for APIs. A good protocol is to manually select the columns you actually need, SELECT public_id, email, created_at FROM users)
 - **c)** Minimize what your endpoints return (principle of least data)
 
-### Part 4. DB-backend mini app
+### Part 3. DB-backend mini app
 #### Section 1. Defining the scope
 Our goal is to buld a small project in which we'll build a read-only page that leverages RO credentials, a series of lists pitches from the table *pitches*, we'll create a reservation floe thst leverages RW credentials, plus we'll build the necessary architecture around the SQL code using HTML, JS, and PHP. 
 
@@ -433,7 +433,7 @@ It takes:
 
 And it returns a **configured PDO connection handle**. The whole point of this is have just one place where I can change options. 
 
-##### Section 3.4.1. Step-by_step inside **pdo_common()** *****
+##### Section 3.5. Step-by_step inside **pdo_common()** *****
 - 1. Build the DSN (Data Source Name) to tell the PDO which driver to use (mysql) and which host, database, charset to connect with 
 
 ```php
@@ -441,13 +441,13 @@ And it returns a **configured PDO connection handle**. The whole point of this i
 ```
 We use sprintf() to plug config values into the DSN template. 
 
-##### Section 3.4.2. Creating the PDO object 
+##### Section 3.6. Creating the PDO object 
 
 To create the connection: 
 ```php
 new PDO($dsn, $user, $pass, [/* optuons*/]);
 ```
-##### Section 3.4.2. Applying consistent PDO options
+##### Section 3.7. Applying consistent PDO options
 To set options so the connection behaves predictably:
 - 1. PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION (I want errors to throw exceptions instead od failing silently)
 - 2. PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC (I want rows as associate arrays), so I can: 
@@ -457,14 +457,14 @@ To set options so the connection behaves predictably:
 rather than numeric indexes like **$row[0]**.
 - 3. **PDO::ATTR_EMULATE_PREPARES => false** is used to express the preference of real prepared statements instead of emulated ones. 
 
-##### Section 3.4.3
+##### Section 3.8. PDO ad return hint
 By: 
 ```php
     function db_ro(): PDO
 ```
 We use **: PDO** as a return type hint, meaning "this functions returns a PDO object".
 
-##### Section 3.4.4. The full snippet
+##### Section 3.9. The full snippet
 
 ```php
     //app/config.php
