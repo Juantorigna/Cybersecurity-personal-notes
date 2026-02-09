@@ -721,4 +721,4 @@ In *reservation_create.php*, try:
 ```php
 $pdo->exec("CREATE TABLE should_fail(id INT)");
 ```
-We expecta **permission denied** message.
+We expect a **permission denied** message.
