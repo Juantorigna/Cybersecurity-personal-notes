@@ -516,7 +516,6 @@ return [
     }
 ```
 ### Part 4. Protecting reads and displaying the DB data safely
-
 The threats we'll consider building defenses against are: 
 - 1. SQL injections. 
 - 2. XSS that might happen if we display user-provided content without encoding. 
@@ -565,5 +564,161 @@ function e(string $s): string {
   </table>
 </body>
 </html>
+```
+The use of htmlspecialchars is extremely important to avoid script injection in any field. encoding prevents it from being executed by broswer. 
+
+#### Part 4.1. Protecting writes (forms, inserts, validation, and CSFR)
+Validation must always follow a double layer structure: 
+- 1. Client-side validation to help the UX via a faster feedback
+- 2. Server-Side validation, where the real protection resides
+
+##### Section 1. Server-side validation, CSRF
+CSFR is when a user is logged into our site and another side tricks their browser into sending a request by piggy-backing the user's session. At the moment our small project doesn't have a login session yet. Still, it is usefull to see it. After all, repetita iuvant.
+
+```php
+    // app/security.php
+    //I will not annotate anything about CFRS since I'll dedicate a file solely to it
+    session_start();
+
+    function cfrs_token(): string {
+        if (empty($_SESSION['cfrs_token'])) {
+            $_SESSION['cfrs_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['cfrs_token'];
+    }
+
+    function cfrs_validate(?string $token): bool {
+        return is_string($token)
+            && isset($_SESSION['cfrs_token'])
+            && hash_equals($_SESSION['cfrs_token'])
+    }
+```
+
+##### Section 2. Reservation from (GET) page
+```php
+    // /public/reservation_new.php
+    <?php
+    require __DIR__ . '/../app/security.php';
+    require __DIR__ . '/../app/db.php';
+
+    $pdo = db_ro();
+    $pitches = $pdo->query("SELECT id, code FROM pitches ORDER BY code")->fetchAll();
+
+    function e(string $s): string {
+    return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    ?>
+    <!doctype html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <title>New Reservation</title>
+    </head>
+    <body>
+    <h1>Create Reservation</h1>
+
+    <form method="post" action="reservation_create.php" id="resForm">
+        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+
+        <label>Pitch:</label>
+        <select name="pitch_id" required>
+        <?php foreach ($pitches as $p): ?>
+            <option value="<?= (int)$p['id'] ?>"><?= e($p['code']) ?></option>
+        <?php endforeach; ?>
+        </select>
+        <br><br>
+
+        <label>Arrival date:</label>
+        <input type="date" name="arrival_date" required>
+        <br><br>
+
+        <label>Departure date:</label>
+        <input type="date" name="departure_date" required>
+        <br><br>
+
+        <label>Notes (optional):</label><br>
+        <textarea name="notes" maxlength="500"></textarea>
+        <br><br>
+
+        <button type="submit">Create</button>
+    </form>
+
+    <script>
+    // Client-side convenience only (not security)
+    document.getElementById('resForm').addEventListener('submit', (e) => {
+        const a = document.querySelector('[name="arrival_date"]').value;
+        const d = document.querySelector('[name="departure_date"]').value;
+        if (a && d && d <= a) {
+        e.preventDefault();
+        alert("Departure must be after arrival.");
+        }
+    });
+    </script>
+    </body>
+    </html>
 
 ```
+
+##### Section 3. Reservation create handler (POST + validation + prepared insert)
+```php
+    // /public/reservation_crete.php
+    <?php
+    require __DIR__ . '/../app/security.php';
+    require __DIR__ . '/../app/db.php';
+
+    function fail(string $msg, int $code = 400): void {
+    http_response_code($code);
+    echo htmlspecialchars($msg, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    exit;
+    }
+
+    if (!csrf_validate($_POST['csrf_token'] ?? null)) {
+    fail("Invalid CSRF token.", 403);
+    }
+
+    //basic server-side validation
+    $pitch_id = filter_input(INPUT_POST, 'pitch:id', FILTER_VALIDATE_INT); 
+    $arrival = $_POST['arrival_date'] ?? '';
+    $departure = $_POST['departure_date'] ?? '';
+    $notes = $_POST['notes'] ?? null;
+
+    if (!$pitch_id) fail("Invalid pitch.", 422);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $arrival)) fail("Invalid arrival date.", 422);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $departure)) fail("Invalid departure date.", 422);
+    if ($departure <= $arrival) fail("Departure must be after arrival.", 422);
+
+    if ($notes !== null) {
+        $notes = trim($notes);
+        if ($noes === '') $notes = null; 
+        if (strlen($notes) > 500) fail("Notes too long.", 422);
+    }
+
+    //In a real app, you'd get user_id from the logged-in user session.
+    // For now, we’ll assume user_id = 1 exists.
+    $user_id = 1
+
+    //you should generste a public_id in the app (ULID/UUID). Placeholder here:
+    $public_id = bin2hex(random_bytes(16)); //32 hex chars ~ 128 bits of randomness
+    try {
+        $pdo = db_rw(); 
+        $sql = "INSERT INTO reservations 
+        (public_id, user_id, pitch_id, arrival_date, departure_date, notes)
+        VALUES 
+        (:public_id, :user_id, )"
+    }
+```
+##### Section 4. Sanity checks. Quick "attack simulation"
+
+- **Test a)** RO connection cannot write
+Let's temporsry this in pitches: 
+```php
+    $pdo->exec("INSERT INTO pitches(code, has_electricity) VALUES ('Z9',1)");
+```
+We expect a **permission denied** message.
+
+- **Test b)**: RW connection cannot alter schema
+In *reservation_create.php*, try: 
+```php
+$pdo->exec("CREATE TABLE should_fail(id INT)");
+```
+We expecta **permission denied** message.
