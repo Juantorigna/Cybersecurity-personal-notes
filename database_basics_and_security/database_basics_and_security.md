@@ -106,7 +106,7 @@ How would an ideal least privilege workflow b structured, then?
 
 - **a)** **root**. Used only to set up and crete a DB.
 - **b)** **migrator/schema user**. Used for schema evolution, hence creating and altering tables, indexes, constraints, etc. 
-- **c)** **app_rw**. Read and write only. Used by endpoint to create and/or update data. It should not be allowed to alter data. 
+- **c)** **app_rw**. Read and write only. Used by endpoint to create and/or update data. It should not be allowed to alter the schema. 
 - **d)** **app_ro**. Read only, used by paged to display data only. It should not be allowed to write anything. 
 
 ### Section 8. Creating roles.
@@ -195,7 +195,7 @@ Without a default role, a user can authenticate successfully but have zero effec
 ```sql
     SHOW GRANTS FOR 'camp_app_ro'@'localhost';
     SHOW GRANTS FOR 'camp_app_rw'@'localhost'; 
-    SHOW GRANTS FOR 'camp_migrator'@'localhost';
+    SHOW GRANTS FOR 'camp_app_migrator'@'localhost';
 ```
 - 2. Test the rules.
 
@@ -227,6 +227,43 @@ DROP USER 'camp_app_rw'@'localhost';
 In case credentials leak, we can use the command we've just seen to restructure our DB access by: <br>
 rotating --> revoking --> replacing <br>
 Concept hook: Rotation is for suspicion. Revocation is for compromise.
+
+### Section 13. Checking who you are and exiting MySQL
+When working with multiple users (root, RO, RW, migrator), it is important to verify which MySQL account you are currently authenticated as: 
+```sql
+    SELECT USER(); /* USER() shows the account name and host you used to authenticate.*/
+```
+or: 
+```sql
+SELECT CURRENT_USER(); /* CURRENT_USER() shows the MySQL account actually used for privilege checks.*/
+```
+To leave the mYSQL client and return to our terminal we run: 
+```sql
+    exit
+```
+This habit is especially useful when switching between root, app RO, app RW, and migrator users during setup and testing.
+### Section 14. Where credentials should (and should not) live
+
+**Rule of thumb:**
+
+> Never hardcode database credentials (especially root) in application code.
+
+In a secure setup:
+
+- Root credentials are used **only for initial setup and administration**
+- The application connects using **least-privilege users** (RO / RW)
+- Database passwords are stored **outside the repository**, for example:
+  - environment variables
+  - system secrets or configuration injected at runtime
+
+This prevents accidental leaks via:
+
+- source control
+- backups
+- logs
+- shared codebases
+
+For learning purposes, credentials may appear in local configuration files, but **real applications must never commit secrets to version control**.
 
 ## Part 2 - Database and schema creation (MySQL)
 In MySQL, the terms database and schema are effectively interchangeable. In these notes, we’ll use “database” for simplicity. <br>
