@@ -1,11 +1,11 @@
 # Database basics and security
 
-## Part one 
+## Part 1 
 
 In this section we'll see how to set MySQL to run locally, how to connect via CLI and GUI, understanding users, hosts, and ports. Additionally we'll see why root is dangerous, and finally we'll learn how to create a non-admin workflow.
 
 ### Section 1
-Some important context first. It is important to always have a threat-driven mindset. In this way, we'll work keeping into account that the db might eventually be exposed, the credentials might be leaked, bugs could happen. 
+Some important context first. It is important to always have a threat-driven mindset. In this way, we will always assume credentials can leak, bugs can exist, and systems can be misused
 
 ### Section 1.1. Connect via Command Line
 
@@ -33,6 +33,7 @@ Start by opening MySQL Workbench, then create a new connection by:
 5. Test connection --> connect 
 
 Sometimes GUIs are preffered over CLI since they are useful for visualizing schemas, reduce human error while browsing data (due to the possibility of visualizing it as we said before), help during debugging. However, GUI can increase risk if the machine is shared, and if our profile is compromised. 
+CLI connections reduce accidental exposure (no saved passwords, no GUI cache, no background processes).
 
 ### Section 3. Understanding users, hosts, and ports (IMPORTANT)
 
@@ -46,20 +47,19 @@ We'll see outputs like:
     root@localhost
     mysql.session@localhost
 ```
-These inputs help us seeing existing account through admin view.<br>
+This query shows all defined authentication identities from an administrative perspective.<br>
 
 **Why do users have a host?** <br>
 In MySQL
 ```sql
     'user'@'host'
 ```
-
 is the real identiy, not the username. This means that
 ```sql
     "root@localhost" != root@% /* they are not the same account*/
 ```
 
-Even if the name is the same, the scope is different. This is very important for security. <br>
+Even if the name is the same, the scope is different. This is very important for security. Security design must assume failure, not perfect code. <br>
 
 **How does MySQL use host + port?**<br>
 The port (in our case 3306) identifies the server. Meanwhile, the host identifies **where** the client is allowed from. 
@@ -92,7 +92,7 @@ Here's the golden rule to DB security:
 
 Example 
 
-Component | Needs
+Component | Required privileges (minimum)
 |:---------|:-------:|
 |Web app | SELECT, INSERT |
 |Admin tool | ALTER |
@@ -110,76 +110,96 @@ How would an ideal least privilege workflow b structured, then?
 - **d)** **app_ro**. Read only, used by paged to display data only. It should not be allowed to write anything. 
 
 ### Section 8. Creating roles.
-A role is a group of privileges we can assign to users. Instead of granting the, directly to each user, we define roles once, and grant them globally. <br>
-Roles allow for less repetition, less chance of mistake, and are easy to audit and update. <br>
+A role is a named collection of privileges that can be assigned to one or more users. Instead of granting privileges directly to every user, we:
 
-To create them we: 
+- **a)** Define roles once
+- **b)** Assign privileges to the roles
+- **c)** Grant roles to users
 
+This approach reduces repetition, lowers the chance of misconfiguration,and makes audits and future changes easier and safer. <br>
+In short, roles separate “what is allowed” from “who is allowed”.
+
+#### Section 8.1 Creating roles.
+We start creating three main roles, each aligned with a specific responsibility: 
 ```sql
     CREATE ROLE 'role_app_ro';
-    CREATE ROLE 'role_app_rw'; 
-    CREATE ROLE 'role_migrator'; 
+    CREATE ROLE 'role_app_rw';
+    CREATE ROLE 'role_migrator';
 ```
+At this stage, the roles exist but have no privileges yet. 
 
-To grant them privileges we proceed in the following way. Assume our schema is called "*camping_db*": 
-
-Read-only: 
+#### Section 8.2 Granting privileges to roles
+Lets assume our database (schema) is called **camping_db**. <br>
+*Read-only role*
 ```sql
-    GRANT SELECT ON camping_db.* TO 'role_app_ro';
+    GRANT SELECT
+    ON camping_db.*
+    TO 'role_app_ro';
 ```
+In this way, this role can read any table in camping_db, but cannot insert, update, delete nor alter anything. <br>
 
-Reading and writing only: 
+*Read-write role* (data only)<br>
+This role is intended for application endpoints that must create or modify data, but must not change the schema, thus the database structure.
 ```sql
-    GRANT, SELECT, INSERT, UPDATE, DELETE ON camping_db.* TO 'role_app_rw';
+    GRANT SELECT, INSERT, UPDATE, DELETE
+    ON camping_db.*
+    TO 'role_app_rw';
 ```
+By this snippet, this role can now modify and read rows. However, it cannot create, alter, or delete tables. Furthermore, it cannot modify indexes or constraints.
 
-Migration (schema evolution): 
+*Migration role* (schema evolution)
+This role is suited for schema/database structure alternations, such as creating/deleting tables, adding indexes, or evolving constraints. 
 ```sql
-    GRANT, CREATE, ALTER, DROP, INDEX, REFERENCES ON camping_db.* TO 'role_migrator'; 
+    GRANT CREATE, ALTER, DROP, INDEX, REFERENCES
+    ON camping_db.*
+    TO 'role_migrator';
 ```
+This role should **never** be used by the live application.
+
+#### Section 8.3. Notes on roles.
+Roles do nothing by themselves. They become effective only after being granted to a user, and being enabled for thast user (generally as a default role)
+
 
 ### Section 9. Creating non-root users with host restrictions
 
-By "host restriction" we mean defining where login is allowed from. 
-
+By "host restriction" we mean defining where login is allowed from. <br>
 For local-dev, we: 
 ```sql
     CREATE USER 'camp_app_ro'@'localhost' IDENTIFIED BY 'use-a-strong-password'; 
     CREATE USER 'camp_app_rw'@'localhost' IDENTIFIED BY 'use-a-strong-password'; 
     CREATE USER 'camp_app_migrator'@'localhost' IDENTIFIED BY 'use-a-strong-password'; 
 ```
-
 With "*use-a-strong-password*" we mean creating a brand-new password for the user, not your MySQL account password. 
 
 ### Section 10. Assigning roles to users and setting default role
 To grant roles to users run: 
 
 ```sql
-GRANT 'role_app_ro' TO 'campapp_ro'@'localhost'; 
-GRANT 'role_app_rw' TO 'campapp_rw@localhost';
-GRANT 'role_migrator' TO 'camp_migrator'@'localhost';  
+GRANT 'role_app_ro' TO 'camp_app_ro'@'localhost'; 
+GRANT 'role_app_rw' TO 'camp_app_rw'@'localhost';
+GRANT 'role_migrator' TO 'camp_app_migrator'@'localhost';  
 ```
 Then, set default role, so it is active automatically, by: 
 
 ```sql
     SET DEFAULT ROLE 'role_app_ro' FOR 'camp_app_ro'@'localhost';
     SET DEFAULT ROLE 'role_app_rw' FOR 'camp_app_rw'@'localhost'; 
-    SET DEFAULT ROLE 'role_app_migrator' FOR 'camp_migrator'@'localhost';
+    SET DEFAULT ROLE 'role_migrator' FOR 'camp_app_migrator'@'localhost';
 ```
-If we don't set a default role, the user may log in and have zero effective privilegies until the role is enabled for the session. 
+If we don't set a default role, the user may log in and have zero effective privilegies until the role is enabled for the session. <br>
+Without a default role, a user can authenticate successfully but have zero effective privileges.
 
-### Section 11. Verify privileges and test the boundaties
+### Section 11. Verify privileges and test the boundaries
 
-- 1. Audit grants: 
-
+- 1. Audit grants:
 ```sql
     SHOW GRANTS FOR 'camp_app_ro'@'localhost';
     SHOW GRANTS FOR 'camp_app_rw'@'localhost'; 
     SHOW GRANTS FOR 'camp_migrator'@'localhost';
 ```
+- 2. Test the rules.
 
-- 2. Test the rules. RO should fail on write: 
-
+RO should fail on write: 
 ```sql
     INSERT INTO pitches(code, has_electricity) VALUES ('A1', true);
     -- Expected: permission denied
@@ -191,27 +211,25 @@ RW should fail on schema changes:
 ```
 ### Section 12. Password rotation + revoking access
 Rotate password: 
-
 ```sql
     ALTER USER 'camp_app_rw'@'localhost' IDENTIFIED BY 'new-strong-password';
 ```
 
 Revoke a role: 
-
 ```sql
-REVOKE 'role_app_rw' FROM 'camp:app_rw'@0'localhost';
+REVOKE 'role_app_rw' FROM 'camp_app_rw'@'localhost';
 ```
 
 Revoke user entirely:
-
 ```sql
 DROP USER 'camp_app_rw'@'localhost';
 ```
 In case credentials leak, we can use the command we've just seen to restructure our DB access by: <br>
-rotating --> revoking --> replacing
+rotating --> revoking --> replacing <br>
+Concept hook: Rotation is for suspicion. Revocation is for compromise.
 
 ## Part 2 - Database and schema creation (MySQL)
-
+In MySQL, the terms database and schema are effectively interchangeable. In these notes, we’ll use “database” for simplicity. <br>
 During this section we'll learn while building a small database for a camping/reservation app. The main touched topics will be: 
 
 - **a)** what a schema is and how it builds our  DB
@@ -220,7 +238,7 @@ During this section we'll learn while building a small database for a camping/re
 - **d)** primary keys with auto-increment
 - **e)** some first simple security design chioces
 
-### Section 0. Open MySQL and confirm where you are
+### Section 0. Context. Open MySQL and confirm where you are
 
 Open your terminal and access to MySQL using the commands learned from Part 1: 
 ```sql
@@ -282,11 +300,11 @@ The expected query telling you everything has worked fine is "**Query OK...**"
 **What do these commands mean?
 
 - **a)** UNSIGNED. A numeric column lie **INT** normally can store negative and positive numbers. By using UNSIGNED we force positive only numbers in our DB. 
-- **b)** VARCHAR(20). It stands for "a string up to 20 characters long.
+- **b)** VARCHAR(n). It stands for "a string up to n characters long.
 - **c)** UNIQUE. It's a constraint that enforces values in a column (or grups of columns) to be different. By having UNIQUE KEY uq_users_email (email) we avoid having rows with a mail already present in another row. **uq_users_email** is just the name we adopt for the unique constraint.
-- **d)** ENGINE=InnoDB. My SQL can store tables using different storage engines. What's a store engine? A store engine is the internal system MySQL uses to store and manage the table on disk. InnoDB is the current standard. InnoDB provides a series of features that can be helpful, such as: foreign keys (relationships like **reservation.user_id -> user.id**), row-level locking (better concurrency when multiple users book at one for example), transactions (all-or-nothing changes) ensure that in a multi-step process all steps are completed in order to grant row creation. If even one step is jumped, then all are discarted. Example: both a reservation procedure AND  the payment must be completed in order to generate the row. 
-- **e)** Row-level locking. Better concurrency when multiple users book at once. Only one event at a time can be processed. 
-- **f)** Better crach recovery than older engines. 
+- **d)** ENGINE=InnoDB. My SQL can store tables using different storage engines. What's a store engine? A store engine is the internal system MySQL uses to store and manage the table on disk. InnoDB is the current standard. InnoDB provides a series of features that can be helpful, such as: foreign keys (relationships like **reservations.user_id -> users.id**), row-level locking (better concurrency when multiple users book at one for example), transactions (all-or-nothing changes) ensure that in a multi-step process all steps are completed in order to grant row creation. If even one step is jumped, then all are discarted. Example: both a reservation procedure AND  the payment must be completed in order to generate the row. 
+- **e)** Row-level locking. It allows multiple users to operate concurrently, while locking only the rows involved in each transaction. 
+- **f)** Better crash recovery than older engines. 
 
 After running the code above we can check it writing: 
 ```sql
@@ -331,30 +349,30 @@ We'll now add a table for reservations:
             ON DELETE RESTRICT ON UPDATE CASCADE, 
 
         CONSTRAINT chk_dates
-            CHECK (departure_date > arrival_date)
+            CHECK (departure_date > arrival_date) /*CHECK constraints are enforced in MySQL 8.0.16 and later*/
         ) ENGINE=InnoDB;
 ```
 
 ### Section 3. Security note.
 #### Why should IDs not be guessable?
-Let's start by defining a problem and then find the solution to it. If our API exposes: 
+Lets start by definying a problem and then finding the solution to it. If our API exposes: 
 
 ```sql
-/reservations/123
-/reservations/124
+    /reservations/123
+    /reservations/124
 ```
 
-Attackers can try IDOR-style guessing (InsecureDirect Object Reference): "what if I request someone else's reservation?" <br>
-Even if our authorization is correct, guessable IDs can leak internal volume (how many rows are there), it cna make scraping easier, and it increases risk if an auth check on one endipoint is ever missed. 
+Attackers can try IDOR-style guessing (InsecureDirect Object Reference): "What if I request someone else's reservation?" <br>
+Even if our authorization is correct, guessable IDs can leak internal volume (how many rows are there), it can make scraping easier, and it increases risk if an auth check on one endpoint is ever missed. 
 
-Now tht we have our probem, how do we solve it?<br>
-A first common solutuion is using two IDs, one private (auto-increment), one public (opaque, to show to the clients). <br>
+Now that we have our problem, how do we solve it?<br>
+A first common solution is using two IDs, one private (auto-increment), one public (opaque, to show to the clients). <br>
 Good public-id format options are: 
 - **a)** ULID. 26 chars, sortable, good for distributed systems
 - **b)** UUID. 36 chars, commonly used
 - **c)** our own custom random token that must have *at least 128 bits of randomness*
 
-!! Remember !! Non-guessable ids help, but never subtitute authorization. 
+!! Remember !! Non-guessable ids help, but are never a substitute for authorization. 
 
 ##### Section 3.1. Security note. Avoiding over-exposed internal structure. 
 As always, a golden rule od coding is building concreate healthy habits that last. Some to keep in our toolbox are: 
@@ -363,13 +381,13 @@ As always, a golden rule od coding is building concreate healthy habits that las
 - **b)** Don't expose intrnal column names blindly in APIs (SELECT * --> avoid for APIs. A good protocol is to manually select the columns you actually need, SELECT public_id, email, created_at FROM users)
 - **c)** Minimize what your endpoints return (principle of least data)
 
-### Part 3. DB-backend mini app
-#### Section 1. Defining the scope
-Our goal is to buld a small project in which we'll build a read-only page that leverages RO credentials, a series of lists pitches from the table *pitches*, we'll create a reservation floe thst leverages RW credentials, plus we'll build the necessary architecture around the SQL code using HTML, JS, and PHP. 
+## Part 3. DB-backend mini app
+### Section 1. Defining the scope
+In this part, we move from SQL design to application architecture, focusing on how backend code safely accesses the database.<br>
+Our goal is to build a small project in which we'll create a read-only page that leverages RO credentials, a series of lists pitches from the table *pitches*. We'll also produce a reservation flow that leverages RW credentials, plus we'll build the necessary architecture around the SQL code using HTML, JS, and PHP. 
 
-#### Section 2. Preject directory
-
-It is useful to keep a clean directory srchitecture like the following: 
+### Section 2. Project directory
+It is useful to keep a clean directory architecture like the following: 
 
     /public/
     pitches.php
@@ -381,73 +399,75 @@ It is useful to keep a clean directory srchitecture like the following:
     security.php
     config.php   (or use environment variables)
 
-Using this layout we'll keep everything under 7public web-accessible, while having /app as internal code only
+Using this layout we'll keep everything under /public web-accessible, while having /app as internal code only.
 
-#### Section 3.0. Goal / big picture
-
+### Section 3 Goal/big picture
 Let's set up a small DB connection layer that keeps the codebase clean and enforces “least privilege”: <br>
-- **a)** One shared function builds a PDO connection the same way every time. <br>
+- **a)** One shared function builds a PDO (PHP Data Object) connection the same way every time. <br>
 - **b)** Two wrapper functions pick which DB user to connect with:
 - 1. read-only for SELECTs
 - 2. read/write for INSERT/UPDATE/DELETE
 
 In this way we won't repeat DSN/options logic, and our app code can just ask for “ro” or “rw” without worrying about credentials.
 
-##### Section 3.1. Wherw the DB settings live
-This is app/config.php is the configuration file that return an array with: 
-- **a)** connection details such as host, database name, harset, etc
+#### Section 3.1. Where the DB settings live
+**app/config.php** is the configuration file that returns an array with: 
+- **a)** connection details such as host, database name, charset, etc
 - **b)** the credentials for two users: 
 - 1. ro_user/ro_pass
 - 2. rw_user/rw_pass
 
-##### Section 3.2. The connection fatory
-**app/db.php** is the file that exposes functions that poduce PDO connections. These are:
+#### Section 3.2. The connection factory
+**app/db.php** is the file that exposes functions that produce PDO connections. These are:
 - 1. pdo_common($cfg, $user, $pass)
 - 2. db_ro() and db:rw()
 
-**pdo_common($cfg, $user, $pass**) knows hot to build a PDO connection given where to connect (done by $cfg that contains host, name, and charset), who is connecting ($user, $pass). <br>
-db_ro() and db_rw() are small wrappers that have the following goals: 
+**pdo_common($cfg, $user, $pass**) knows how to build a PDO connection given where to connect (done by $cfg that contains host, name, and charset), and who is connecting ($user, $pass). <br>
+**db_ro()** and **db_rw()** are small wrappers that have the following goals: 
 - **a)** load config
-- **b)** grab $consig['db']
+- **b)** grab $config['db']
 - **c)** choose the correct credentials
 - **d)** call pdo_common(...)
 
-##### Section 3.3. Mental picture 
-
+#### Section 3.3. Mental picture 
 Reading path: 
     Our code (SELECT) → db_ro() → load config → pdo_common() → new PDO(...) → PDO handle
 
 Writing path: 
     OUR code (INSERT/UPDATE/DELETE) → db_rw() → load config → pdo_common() → new PDO(...) → PDO handle
 
-Thus db_ro/db_rw are **puclic** entry points and **pdo_common** is the private file that does the actual work.
+Thus, db_ro()/db_rw() are **puclic** entrypoints and **pdo_common** is the internal (not private) helper function, not intended to be called directly by application code.
 
-##### Section 3.4. The shared builder
-The shared builder aferomentioned is "**pdo_commo(...)**" and it is used as a single source for creating PDO connections: 
+#### Section 3.4. The shared builder
+The shared builder aforementioned is "**pdo_common(...)**" and it is used as a single source to create PDO connections: 
 ```php
-    pdo_common(array $cfg, string $user, string $pass): PDO
+    pdo_common(array $cfg, string $user, string $pass): PDO {}
 ```
 It takes: 
-- **a)** $cfg where we stored host, name, and charset
-- **b)** $user, $pass for credentials depending on what I want. Either rw or ro.
+- **a)** **$cfg** where we stored host, name, and charset
+- **b)** **$user**, **$pass** for credentials depending on what I want, either rw or ro.
 
-And it returns a **configured PDO connection handle**. The whole point of this is have just one place where I can change options. 
+And it returns a **configured PDO connection handle**. The whole point of this is to have just one place where I can change options. 
 
-##### Section 3.5. Step-by_step inside **pdo_common()** *****
+#### Section 3.5. Step-by-step inside **pdo_common()** *****
 - 1. Build the DSN (Data Source Name) to tell the PDO which driver to use (mysql) and which host, database, charset to connect with 
 
 ```php
-    mysql:host='localhost;dbname=camping_db;charset=utf8mb4
+    $dsn = sprintf(
+    "mysql:host=%s;dbname=%s;charset=%s",
+    $cfg['host'],
+    $cfg['name'],
+    $cfg['charset']
+);
 ```
 We use sprintf() to plug config values into the DSN template. 
 
-##### Section 3.6. Creating the PDO object 
-
+#### Section 3.6. Creating the PDO object 
 To create the connection: 
 ```php
-new PDO($dsn, $user, $pass, [/* optuons*/]);
+new PDO($dsn, $user, $pass, [/* options*/]);
 ```
-##### Section 3.7. Applying consistent PDO options
+#### Section 3.7. Applying consistent PDO options
 To set options so the connection behaves predictably:
 - 1. PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION (I want errors to throw exceptions instead od failing silently)
 - 2. PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC (I want rows as associate arrays), so I can: 
@@ -457,14 +477,14 @@ To set options so the connection behaves predictably:
 rather than numeric indexes like **$row[0]**.
 - 3. **PDO::ATTR_EMULATE_PREPARES => false** is used to express the preference of real prepared statements instead of emulated ones. 
 
-##### Section 3.8. PDO ad return hint
+#### Section 3.8. PDO ad return hint
 By: 
 ```php
     function db_ro(): PDO
 ```
-We use **: PDO** as a return type hint, meaning "this functions returns a PDO object".
+We use **: PDO** as a return type hint, meaning "this function returns a PDO object".
 
-##### Section 3.9. The full snippet
+#### Section 3.9. The full snippet
 
 ```php
     //app/config.php
@@ -487,9 +507,9 @@ return [
 ```php
     //app/db.php (PDO)
 
-    function pdo_common(array $cfg, string, $user, string, $pass): PDO {
+    function pdo_common(array $cfg, string $user, string $pass): PDO {
         $dsn = sprintf(
-            "mysql:host=%s;dbname=%;charset=%s",
+            "mysql:host=%s;dbname=%s;charset=%s",
             $cfg['host'],
             $cfg['name'],
             $cfg['charset']
@@ -504,18 +524,18 @@ return [
     }
 
     function db_ro(): PDO {
-        $config = require_DIR_ . '/config.php';
+        $config = require __DIR__ . '/config.php';
         $db = $config['db']; 
         return pdo_common($db, $db['ro_user'], $db['ro_pass']);
     }
 
     function db_rw(): PDO {
-        $config = require_DIR_ . 'config.php';
+        $config = require __DIR__ . '/config.php';
         $db = $config['db'];
         return pdo_common($db, $db['rw_user'], $db['rw_pass']);
     }
 ```
-### Part 4. Protecting reads and displaying the DB data safely
+## Part 4. Protecting reads and displaying the DB data safely
 The threats we'll consider building defenses against are: 
 - 1. SQL injections. 
 - 2. XSS that might happen if we display user-provided content without encoding. 
@@ -567,12 +587,12 @@ function e(string $s): string {
 ```
 The use of htmlspecialchars is extremely important to avoid script injection in any field. encoding prevents it from being executed by broswer. 
 
-#### Part 4.1. Protecting writes (forms, inserts, validation, and CSFR)
+### Part 4.1. Protecting writes (forms, inserts, validation, and CSFR)
 Validation must always follow a double layer structure: 
 - 1. Client-side validation to help the UX via a faster feedback
 - 2. Server-Side validation, where the real protection resides
 
-##### Section 1. Server-side validation, CSRF
+#### Section 1. Server-side validation, CSRF
 CSFR is when a user is logged into our site and another side tricks their browser into sending a request by piggy-backing the user's session. At the moment our small project doesn't have a login session yet. Still, it is usefull to see it. After all, repetita iuvant.
 
 ```php
@@ -580,21 +600,21 @@ CSFR is when a user is logged into our site and another side tricks their browse
     //I will not annotate anything about CFRS since I'll dedicate a file solely to it
     session_start();
 
-    function cfrs_token(): string {
+    function csrf_token(): string {
         if (empty($_SESSION['cfrs_token'])) {
             $_SESSION['cfrs_token'] = bin2hex(random_bytes(32));
         }
         return $_SESSION['cfrs_token'];
     }
 
-    function cfrs_validate(?string $token): bool {
+    function csrf_validate(?string $token): bool {
         return is_string($token)
             && isset($_SESSION['cfrs_token'])
-            && hash_equals($_SESSION['cfrs_token'])
+            && hash_equals($_SESSION['cfrs_token'], $token)
     }
 ```
 
-##### Section 2. Reservation from (GET) page
+#### Section 2. Reservation from (GET) page
 ```php
     // /public/reservation_new.php
     <?php
@@ -659,9 +679,9 @@ CSFR is when a user is logged into our site and another side tricks their browse
 
 ```
 
-##### Section 3. Reservation create handler (POST + validation + prepared insert)
+#### Section 3. Reservation create handler (POST + validation + prepared insert)
 ```php
-    // /public/reservation_crete.php
+    // /public/reservation_create.php
     <?php
     require __DIR__ . '/../app/security.php';
     require __DIR__ . '/../app/db.php';
@@ -677,7 +697,7 @@ CSFR is when a user is logged into our site and another side tricks their browse
     }
 
     //basic server-side validation
-    $pitch_id = filter_input(INPUT_POST, 'pitch:id', FILTER_VALIDATE_INT); 
+    $pitch_id = filter_input(INPUT_POST, 'pitch_id', FILTER_VALIDATE_INT); 
     $arrival = $_POST['arrival_date'] ?? '';
     $departure = $_POST['departure_date'] ?? '';
     $notes = $_POST['notes'] ?? null;
@@ -689,7 +709,7 @@ CSFR is when a user is logged into our site and another side tricks their browse
 
     if ($notes !== null) {
         $notes = trim($notes);
-        if ($noes === '') $notes = null; 
+        if ($notes === '') $notes = null; 
         if (strlen($notes) > 500) fail("Notes too long.", 422);
     }
 
@@ -707,7 +727,7 @@ CSFR is when a user is logged into our site and another side tricks their browse
         (:public_id, :user_id, )"
     }
 ```
-##### Section 4. Sanity checks. Quick "attack simulation"
+#### Section 4. Sanity checks. Quick "attack simulation"
 
 - **Test a)** RO connection cannot write
 Let's temporsry this in pitches: 
