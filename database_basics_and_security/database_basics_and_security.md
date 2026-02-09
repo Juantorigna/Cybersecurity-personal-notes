@@ -129,7 +129,7 @@ We start creating three main roles, each aligned with a specific responsibility:
 At this stage, the roles exist but have no privileges yet. 
 
 #### Section 8.2 Granting privileges to roles
-Lets assume our database (schema) is called **camping_db**. <br>
+Let's assume our database (schema) is called **camping_db**. <br>
 *Read-only role*
 ```sql
     GRANT SELECT
@@ -355,7 +355,7 @@ We'll now add a table for reservations:
 
 ### Section 3. Security note.
 #### Why should IDs not be guessable?
-Lets start by definying a problem and then finding the solution to it. If our API exposes: 
+Let's start by definying a problem and then finding the solution to it. If our API exposes: 
 
 ```sql
     /reservations/123
@@ -598,19 +598,21 @@ CSFR is when a user is logged into our site and another side tricks their browse
 ```php
     // app/security.php
     //I will not annotate anything about CFRS since I'll dedicate a file solely to it
+    // (CSRF is important but we'll later dedicate a full file to it.)
+
     session_start();
 
     function csrf_token(): string {
-        if (empty($_SESSION['cfrs_token'])) {
-            $_SESSION['cfrs_token'] = bin2hex(random_bytes(32));
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
-        return $_SESSION['cfrs_token'];
+        return $_SESSION['csrf_token'];
     }
 
     function csrf_validate(?string $token): bool {
         return is_string($token)
-            && isset($_SESSION['cfrs_token'])
-            && hash_equals($_SESSION['cfrs_token'], $token)
+            && isset($_SESSION['csrf_token'])
+            && hash_equals($_SESSION['csrf_token'], $token);
     }
 ```
 
@@ -715,7 +717,7 @@ CSFR is when a user is logged into our site and another side tricks their browse
 
     //In a real app, you'd get user_id from the logged-in user session.
     // For now, we’ll assume user_id = 1 exists.
-    $user_id = 1
+    $user_id = 1;
 
     //you should generste a public_id in the app (ULID/UUID). Placeholder here:
     $public_id = bin2hex(random_bytes(16)); //32 hex chars ~ 128 bits of randomness
@@ -724,7 +726,7 @@ CSFR is when a user is logged into our site and another side tricks their browse
         $sql = "INSERT INTO reservations 
         (public_id, user_id, pitch_id, arrival_date, departure_date, notes)
         VALUES 
-        (:public_id, :user_id, )"
+        (:public_id, :user_id, :arrival_date, :departure_date, :notes )"
     }
 ```
 #### Section 4. Sanity checks. Quick "attack simulation"
@@ -739,6 +741,6 @@ We expect a **permission denied** message.
 - **Test b)**: RW connection cannot alter schema
 In *reservation_create.php*, try: 
 ```php
-$pdo->exec("CREATE TABLE should_fail(id INT)");
+    $pdo->exec("CREATE TABLE should_fail(id INT)");
 ```
 We expect a **permission denied** message.
