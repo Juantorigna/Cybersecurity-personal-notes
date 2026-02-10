@@ -843,3 +843,67 @@ In *reservation_create.php*, try:
     $pdo->exec("CREATE TABLE should_fail(id INT)");
 ```
 We expect a **permission denied** message.
+
+#### Section 5. Project workflow scheme
+┌────────────────────┐
+│      Browser       │
+└─────────┬──────────┘
+          │
+          │  HTTP GET / POST
+          │
+┌─────────▼──────────┐
+│  /public/*.php     │   ← Web-accessible layer
+│                    │
+│  - pitches.php     │
+│  - reservation_*.php
+│                    │
+│  Responsibilities: │
+│  - receive input   │
+│  - validate input  │
+│  - encode output   │
+│  - choose RO / RW  │
+└─────────┬──────────┘
+          │
+          │  require
+          │
+┌─────────▼──────────┐
+│   /app/db.php      │   ← DB access layer
+│                    │
+│  db_ro()           │───┐
+│  db_rw()           │───┤  Selects credentials
+│  pdo_common()      │◄──┘
+│                    │
+│  Responsibilities: │
+│  - load config     │
+│  - build DSN       │
+│  - create PDO      │
+│  - enforce privilege
+└─────────┬──────────┘
+          │
+          │  require
+          │
+┌─────────▼──────────┐
+│  /app/config.php   │   ← Configuration boundary
+│                    │
+│  Contains:         │
+│  - host            │
+│  - db name         │
+│  - charset         │
+│  - RO credentials  │
+│  - RW credentials  │
+└─────────┬──────────┘
+          │
+          │  PDO connection
+          │
+┌─────────▼──────────┐
+│      MySQL         │
+│                    │
+│  Users:            │
+│  - camp_app_ro     │
+│  - camp_app_rw     │
+│                    │
+│  Roles enforce:    │
+│  - read-only       │
+│  - read/write      │
+│                    │
+└────────────────────┘
