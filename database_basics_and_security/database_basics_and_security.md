@@ -1,5 +1,4 @@
 # Database basics and security
-
 ## Part 1 
 
 In this section we'll see how to set MySQL to run locally, how to connect via CLI and GUI, understanding users, hosts, and ports. Additionally we'll see why root is dangerous, and finally we'll learn how to create a non-admin workflow.
