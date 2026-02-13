@@ -104,8 +104,9 @@ created_by BIGINT UNSIGNED NULL
 updated_by BIGINT UNSIGNED NULL
 ```
 - 7. Mantainability/Concurrency safety
+
 Large systems usually add: 
 ```sql
 version INT NOT NULL DEFAULT 1
 ```
-Used got optimistic locking that prevents two users from overwriting each other's changes silently. We'll see it in a deeper manner later. 
+Used for optimistic locking that prevents two users from overwriting each other's changes silently. We'll see it in a deeper manner later. 
