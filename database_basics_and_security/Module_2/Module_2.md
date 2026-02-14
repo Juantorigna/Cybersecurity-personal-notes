@@ -110,3 +110,127 @@ Large systems usually add:
 version INT NOT NULL DEFAULT 1
 ```
 Used for optimistic locking that prevents two users from overwriting each other's changes silently. We'll see it in a deeper manner later. 
+
+### Part 1, Section 2. Relationships 
+By relationship we mean:<br>
+"*a formalized rule that links one entity to another in a controlled way*". 
+
+Relationships exist due to multiple information ssystem needs, such as: 
+- Ownership (an element belongs to a category)
+- Association (a record was create by a user)
+- Dependency (a transaction references an account)
+- Containment (a file belongs to a folder)
+- Classification (a comment references a post)
+- Participation (a device reports to a system)
+
+Relational databses do not store "arrows", they store values. 
+e.g.
+Table A
+```bash
+id
+```
+Table B
+```bash
+id
+a_id
+```
+The relatioship is encoded by: 
+```ini
+B.a_id = A.id
+```
+The equality is the entire elational glue.<br>
+To further understand relationships we must jum from defining them as: 
+"*Row A points to Row B*" <br>
+and start defyning them more like: 
+"*Row A contains a value that must satisfy a constraint defined in Row B*"
+
+#### Part 1, Sub-section 2.1. Relational Cardinality
+##### Sub-section 2.1.1. One-to-One (1:1)
+*Each row in A matches at most one row in B*
+e.g.
+A person has **one** passport, and a device has **one** serial configuration
+How do we implement it? Table B contains a **foreign key** to table A which is **UNIQUE**.
+```sql
+CREATE TABLE A (
+    id BIGINT PRIMARY KEY
+);
+```
+```sql
+CREATE TABLE B (
+    id BIGINT PRIMARY KEY,
+    a_id BIGINT UNIQUE,
+    FOREIGN KEY (a_id) REFERENCES A(id)
+);
+```
+**UNIQUE** enforces one-to-one
+
+##### Sub-section 2.1.2. One-to-Many (1:N)
+One row in table A can be referenced by many rows in table B (very common, if not the most common). Examples that help understanding this could be a category containing many items, a user creating many records, a parent having multiple children. <br>
+Only the "**many**" side contains the foreign key: 
+```sql
+CREATE TABLE A (
+    id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE B (
+    id BIGINT PRIMARY KEY, 
+    a_id BIGINT, 
+    FOREIGN KEY (a_id) REFERENCES A(id)
+);
+```
+Now many rows in B can point to the same row in A
+
+##### Sub-section 2.1.3. Many-to-Many (M:N)
+Many rows in table A can relate to many rows in table B. Examples can include a student enrolling in many courses, a course having multiple students, a product having many tags, a tag belonging to many products. <br>
+!! ** Relational databases can't directly represent a matrix M:N** !! To do so, they require an intermediate table: 
+```sql
+CREATE TABLE A (
+    id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE B (
+    id BIGINT PRIMARY KEY
+);
+
+CREATE TABLE A_B (
+    a_id BIGINT,
+    b_id BIGINT, 
+    PRIMARY KEY (a_id, b_id),
+    FOREIGN KEY (a_id) REFERENCES A(id),
+    FOREIGN KEY (b_id) REFERENCES B(id)
+);
+```
+#### Part 1, Sub-section 2.2. Integrity theory 
+Why do FOREIGN KEYs actually matter? Without them: 
+- a. The database doen't enforce existence
+- b. We could reference non-existing rows
+- c. We could create orphan data.
+
+Hence, a foreign key guarantees that "**if B references A, then A MUST exist**."
+
+#### Part 1, Sub-section 2.3. Lifecycle and Referential actions
+When two entities are related they become struturslly dependent. <br>
+When defining a foreign key: 
+```sql
+FOREIGN KEY (a_id) REFERENCES A(id)
+```
+We are saying "B depends on A for existence vallidity". This brings a serious issue, if A changes or disappears, what happens to B? Our system MUST know the answer to this. These are called **referential actions**. They are enforced at database level. 
+
+**Three fundamenta delete policies:** <br>
+- 1. RESTRICT (OR NO ACTION) --> "You can't delete A if B references it"n (Strong dependency). 
+- 2. CASCADE --> "If A is deleted, delete all dependent B rows automatically" (Weak dependency). 
+- 3. SET NULL --> "If A is deleted, then B loses the relationship with it BUT it survives" (Protective dependency). 
+
+To continue, every entity in a relational system has a lifecycle: 
+Creation --> Mutation --> Possible deletion --> Historical preservation
+
+The 3 commands form before are important because when entities are related, their lyfecycle intersects. This is known as **lifecycle coupling**. 
+
+### Part 1, Section 3. Normalization
+By normalizaion we mean: "don't duplicate the same fact in multiple places". This means that it is ot a formatiing technique, rather a method for ensuring the following: 
+- a. Logical consistency,
+- b. Minimal redundancy
+- c. Structural integrity
+- d. Predictable behaviour under updates
+
+It is based on **functional dependency theory**.
